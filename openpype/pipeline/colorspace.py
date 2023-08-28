@@ -2,9 +2,12 @@ from copy import deepcopy
 import re
 import os
 import json
-import platform
 import contextlib
+import functools
+import platform
 import tempfile
+import warnings
+
 from openpype import PACKAGE_DIR
 from openpype.settings import get_project_settings
 from openpype.lib import (
@@ -24,6 +27,51 @@ class CachedData:
     allowed_exts = {
         ext.lstrip(".") for ext in IMAGE_EXTENSIONS.union(VIDEO_EXTENSIONS)
     }
+
+
+class DeprecatedWarning(DeprecationWarning):
+    pass
+
+
+def deprecated(new_destination):
+    """Mark functions as deprecated.
+
+    It will result in a warning being emitted when the function is used.
+    """
+
+    func = None
+    if callable(new_destination):
+        func = new_destination
+        new_destination = None
+
+    def _decorator(decorated_func):
+        if new_destination is None:
+            warning_message = (
+                " Please check content of deprecated function to figure out"
+                " possible replacement."
+            )
+        else:
+            warning_message = " Please replace your usage with '{}'.".format(
+                new_destination
+            )
+
+        @functools.wraps(decorated_func)
+        def wrapper(*args, **kwargs):
+            warnings.simplefilter("always", DeprecatedWarning)
+            warnings.warn(
+                (
+                    "Call to deprecated function '{}'"
+                    "\nFunction was moved or removed.{}"
+                ).format(decorated_func.__name__, warning_message),
+                category=DeprecatedWarning,
+                stacklevel=4
+            )
+            return decorated_func(*args, **kwargs)
+        return wrapper
+
+    if func is None:
+        return _decorator
+    return _decorator(func)
 
 
 @contextlib.contextmanager
@@ -256,6 +304,7 @@ def validate_imageio_colorspace_in_config(config_path, colorspace_name):
 
 
 # TODO: remove this in future - backward compatibility
+@deprecated("get_wrapped_with_subprocess")
 def get_data_subprocess(config_path, data_type):
     """[Deprecated] Get data via subprocess
 
@@ -393,6 +442,7 @@ def get_ocio_config_colorspaces(config_path):
 
 
 # TODO: remove this in future - backward compatibility
+@deprecated("get_wrapped_with_subprocess")
 def get_colorspace_data_subprocess(config_path):
     """[Deprecated] Get colorspace data via subprocess
 
@@ -434,6 +484,7 @@ def get_ocio_config_views(config_path):
 
 
 # TODO: remove this in future - backward compatibility
+@deprecated("get_wrapped_with_subprocess")
 def get_views_data_subprocess(config_path):
     """[Deprecated] Get viewers data via subprocess
 
