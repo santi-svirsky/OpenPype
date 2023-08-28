@@ -402,16 +402,17 @@ def compatibility_check_config_version(config_path, major=1, minor=None):
             "config", "get_version", config_path=config_path
         )
 
-    from openpype.scripts.ocio_wrapper import _get_version_data
+    if not CashedData.config_version_data:
+        from openpype.scripts.ocio_wrapper import _get_version_data
 
-    version_data = _get_version_data(config_path)
+        CashedData.config_version_data = _get_version_data(config_path)
 
     # check major version
-    if version_data["major"] != major:
+    if CashedData.config_version_data["major"] != major:
         return False
 
     # check minor version
-    if minor and version_data["minor"] != minor:
+    if minor and CashedData.config_version_data["minor"] != minor:
         return False
 
     # compatible
