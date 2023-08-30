@@ -393,31 +393,31 @@ def compatibility_check():
         return False
 
     # compatible
-    return CashedData.python3compatible
+    return CachedData.python3compatible
 
 
 def compatibility_check_config_version(config_path, major=1, minor=None):
     """Making sure PyOpenColorIO config version is compatible"""
 
-    if not CashedData.config_version_data:
+    if not CachedData.config_version_data:
         if compatibility_check():
             from openpype.scripts.ocio_wrapper import _get_version_data
 
-            CashedData.config_version_data = _get_version_data(config_path)
+            CachedData.config_version_data = _get_version_data(config_path)
 
         else:
             # python environment is not compatible with PyOpenColorIO
             # needs to be run in subprocess
-            CashedData.config_version_data = get_wrapped_with_subprocess(
+            CachedData.config_version_data = get_wrapped_with_subprocess(
                 "config", "get_version", config_path=config_path
             )
 
     # check major version
-    if CashedData.config_version_data["major"] != major:
+    if CachedData.config_version_data["major"] != major:
         return False
 
     # check minor version
-    if minor and CashedData.config_version_data["minor"] != minor:
+    if minor and CachedData.config_version_data["minor"] != minor:
         return False
 
     # compatible
@@ -436,21 +436,21 @@ def get_ocio_config_colorspaces(config_path):
     Returns:
         dict: colorspace and family in couple
     """
-    if not CashedData.ocio_config_colorspaces.get(config_path):
+    if not CachedData.ocio_config_colorspaces.get(config_path):
         if not compatibility_check():
             # python environment is not compatible with PyOpenColorIO
             # needs to be run in subprocess
-            CashedData.ocio_config_colorspaces[config_path] = \
+            CachedData.ocio_config_colorspaces[config_path] = \
                 get_wrapped_with_subprocess(
                     "config", "get_colorspace", in_path=config_path
             )
         else:
             from openpype.scripts.ocio_wrapper import _get_colorspace_data
 
-            CashedData.ocio_config_colorspaces[config_path] = \
+            CachedData.ocio_config_colorspaces[config_path] = \
                 _get_colorspace_data(config_path)
 
-    return CashedData.ocio_config_colorspaces[config_path]
+    return CachedData.ocio_config_colorspaces[config_path]
 
 
 # TODO: remove this in future - backward compatibility
