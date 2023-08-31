@@ -195,7 +195,7 @@ class TestPipelineColorspace(TestPipeline):
         expected_nuke = "Camera Rec.709"
         expected_hiero = "Gamma 2.2 Rec.709 - Texture"
 
-        nuke_colorspace = colorspace.get_imageio_colorspace_from_filepath(
+        nuke_colorspace = colorspace.get_colorspace_name_from_filepath(
             nuke_filepath,
             "nuke",
             "test_project",
@@ -204,7 +204,7 @@ class TestPipelineColorspace(TestPipeline):
         assert expected_nuke == nuke_colorspace, (
             f"Not matching colorspace {expected_nuke}")
 
-        hiero_colorspace = colorspace.get_imageio_colorspace_from_filepath(
+        hiero_colorspace = colorspace.get_colorspace_name_from_filepath(
             hiero_filepath,
             "hiero",
             "test_project",
@@ -228,7 +228,7 @@ class TestPipelineColorspace(TestPipeline):
         # switch to python 2 compatibility mode
         colorspace.CachedData.python3compatible = False
 
-        nuke_colorspace = colorspace.get_imageio_colorspace_from_filepath(
+        nuke_colorspace = colorspace.get_colorspace_name_from_filepath(
             nuke_filepath,
             "nuke",
             "test_project",
@@ -237,7 +237,7 @@ class TestPipelineColorspace(TestPipeline):
         assert expected_nuke == nuke_colorspace, (
             f"Not matching colorspace {expected_nuke}")
 
-        hiero_colorspace = colorspace.get_imageio_colorspace_from_filepath(
+        hiero_colorspace = colorspace.get_colorspace_name_from_filepath(
             hiero_filepath,
             "hiero",
             "test_project",
