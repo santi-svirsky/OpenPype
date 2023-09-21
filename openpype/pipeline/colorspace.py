@@ -472,26 +472,26 @@ def compatibility_check():
 def compatibility_check_config_version(config_path, major=1, minor=None):
     """Making sure PyOpenColorIO config version is compatible"""
 
-    if not CachedData.config_version_data:
+    if not CachedData.config_version_data.get(config_path):
         if compatibility_check():
             # TODO: refactor this so it is not imported but part of this file
             from openpype.scripts.ocio_wrapper import _get_version_data
 
-            CachedData.config_version_data = _get_version_data(config_path)
+            CachedData.config_version_data[config_path] = _get_version_data(config_path)
 
         else:
             # python environment is not compatible with PyOpenColorIO
             # needs to be run in subprocess
-            CachedData.config_version_data = _get_wrapped_with_subprocess(
+            CachedData.config_version_data[config_path] = _get_wrapped_with_subprocess(
                 "config", "get_version", config_path=config_path
             )
 
     # check major version
-    if CachedData.config_version_data["major"] != major:
+    if CachedData.config_version_data[config_path]["major"] != major:
         return False
 
     # check minor version
-    if minor and CachedData.config_version_data["minor"] != minor:
+    if minor and CachedData.config_version_data[config_path]["minor"] != minor:
         return False
 
     # compatible
