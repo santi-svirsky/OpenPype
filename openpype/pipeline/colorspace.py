@@ -472,7 +472,7 @@ def compatibility_check():
         return False
 
     # compatible
-    return CachedData.python3compatible
+    return CachedData.has_compatible_ocio_package
 
 
 # TODO: this should be part of ocio_wrapper.py
