@@ -361,7 +361,7 @@ def parse_colorspace_from_filepath(
 
     # match colorspace from  filepath
     regex_pattern = _get_colorspace_match_regex(
-        colorspaces + underscored_colorspaces.keys())
+        list(colorspaces) + list(underscored_colorspaces))
     match = regex_pattern.search(filepath)
     colorspace = match.group(0) if match else None
 
