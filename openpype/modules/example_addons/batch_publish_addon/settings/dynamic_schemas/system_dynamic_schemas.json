@@ -1,0 +1,6 @@
+{
+    "system_settings/modules": {
+        "type": "schema",
+        "name": "batch_publish_addon/main"
+    }
+}

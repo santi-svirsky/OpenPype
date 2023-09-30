@@ -1,0 +1,14 @@
+{
+    "type": "dict",
+    "key": "batch_publish_addon",
+    "label": "Batch Publish addon",
+    "collapsible": true,
+    "checkbox_key": "enabled",
+    "children": [
+        {
+            "type": "boolean",
+            "key": "enabled",
+            "label": "Enabled"
+        }
+    ]
+}
