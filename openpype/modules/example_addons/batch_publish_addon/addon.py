@@ -124,7 +124,7 @@ class BatchPublishAddon(OpenPypeAddOn, IPluginPaths, ITrayAction):
 
     def get_global_environments(self):
         """Get addon global environments.
-        
+
         Use standalone publisher for asset publishing
         """
         return {
