@@ -180,7 +180,7 @@ def process_directory():
     }
     task_type = gazu.task.get_task_type_by_name("Concept")
     task_status = gazu.task.get_task_status_by_short_name("wfa")
-    
+
     # print(assets)
     # Register pyblish plugins
     pyblish.api.register_host("shell")
