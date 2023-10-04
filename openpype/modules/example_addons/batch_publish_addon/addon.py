@@ -13,7 +13,7 @@ import click
 import pyblish
 from pathlib import Path
 import gazu
-import fuzzywuzzy
+from fuzzywuzzy import fuzz, process
 
 from openpype.modules import (
     JsonFilesSettingsDef,
@@ -142,8 +142,8 @@ def cli_main():
 def process_directory():
     """Does nothing but print a message."""
     print("You've triggered \"process_directory\" command.")
-    DIRECTORY = '/sombrero/jobs/cse/in/20231002/09_Deliveries/2023.07.19/03_PSD_BGs/'
-    PROJECT = 'cse_test_054'
+    DIRECTORY = '/sombrero/jobs/cse/in/ingest_test/'
+    PROJECT = 'cse_test_056'
     project = PROJECT
 
 
@@ -167,18 +167,21 @@ def process_directory():
 
     # Fetch zou data
     zou_project = gazu.project.get_project_by_name(project)
-    board = gazu.task.get_task_type_by_name("Board")
-    real = gazu.task.get_task_status_by_name("Real")
-    shots = {
-        shot["name"]: shot
-        for shot in gazu.shot.all_shots_for_project(zou_project)
-    }
-    print(shots)
+    # board = gazu.task.get_task_type_by_name("Board")
+    # real = gazu.task.get_task_status_by_name("Real")
+    # shots = {
+    #     shot["name"]: shot
+    #     for shot in gazu.shot.all_shots_for_project(zou_project)
+    # }
+    # print(shots)
     assets = {
         asset["name"]: asset
         for asset in gazu.asset.all_assets_for_project(zou_project)
     }
-    print(assets)
+    task_type = gazu.task.get_task_type_by_name("Concept")
+    task_status = gazu.task.get_task_status_by_short_name("wfa")
+    
+    # print(assets)
     # Register pyblish plugins
     pyblish.api.register_host("shell")
     openpype_path = Path(os.environ["OPENPYPE_REPOS_ROOT"])
@@ -202,24 +205,40 @@ def process_directory():
     # for file in files:
     #     print(file)
 
-
+    # print(assets.keys())
 
     for filepath in Path(DIRECTORY).iterdir():
-        # Get related zou shot
-        shot = shots.get(filepath.stem)
-        print(filepath.stem)
-        if not shot:
-            continue
+
+        # match_ratios = process.extract(filepath.stem, assets.keys, scorer=fuzz.token_sort_ratio)
+
+        # FUZZY MATCH filepath.stem vs assets.keys
+        best_match, _ = process.extractOne(filepath.stem, assets.keys(), scorer=fuzz.token_sort_ratio)
+        # print(best_match)
+
+        asset = assets.get(best_match)
+        # for key in assets.keys():
+            # print(best_match, key)
+            # if best_match == key:
+                # print("Yes")
+        # print(asset)
+        # Get related zou asset
+        # asset = shots.get(filepath.stem)
+        # print(filepath.stem)
+        # if not shot:
+        #     continue
 
         # Get related zou task
-        task = gazu.task.get_task_by_name(shot, board)
+        print(task_type)
+        print(asset['id'])
+        task = gazu.task.get_task_by_name(asset, task_type)
+        print(task)
         if not task:
             continue
 
-        # Upload to Kitsu
-        # if upload_to_kitsu and task["task_status_id"] != real["id"]:
+        # # Upload to Kitsu
+        # # if upload_to_kitsu and task["task_status_id"] != real["id"]:
         if True:
-            comment = gazu.task.add_comment(task, real)
+            comment = gazu.task.add_comment(task, task_status, f"Original: {filepath}")
             preview = gazu.task.add_preview(
                 task,
                 comment,
@@ -228,29 +247,30 @@ def process_directory():
             gazu.task.set_main_preview(preview)
 
         # Build shot appropriate name
-        seq = gazu.shot.get_sequence_from_shot(shot)
-        shot_name = "_".join([seq["episode_name"], seq["name"], filepath.stem])
+        # seq = gazu.shot.get_sequence_from_shot(shot)
+        # shot_name = "_".join([seq["episode_name"], seq["name"], filepath.stem])
 
         # Build required pyblish data
-        os.environ["AVALON_ASSET"] = shot_name
+        # asset['name']
+        os.environ["AVALON_ASSET"] = asset['name']
         context = pyblish.api.Context()
-        instance = context.create_instance(name=shot_name)
+        instance = context.create_instance(name=asset['name'])
         instance.data.update(
             {
                 "family": "review",
-                "asset": shot_name,
-                "task": "Board",
-                "subset": "BoardReference",
+                "asset": asset['name'],
+                "task": "Concept",
+                "subset": "background",
                 "publish": True,
                 "active": True,
                 "source": filepath.as_posix(),
             }
         )
-
         # Add representation
+        ext = filepath.suffix.strip(".")
         representation = {
-            "name": "mov",
-            "ext": "mov",
+            "name": ext,
+            "ext": ext,
             "preview": True,
             "tags": ["review"],
             "files": filepath.name,
