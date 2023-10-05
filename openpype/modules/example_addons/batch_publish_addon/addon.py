@@ -140,13 +140,11 @@ def cli_main():
 
 @cli_main.command()
 def process_directory():
-    """Does nothing but print a message."""
+    """Processes input directory. Walks through source, fuzzy-matches to OP assets and publishes."""
     print("You've triggered \"process_directory\" command.")
     DIRECTORY = '/sombrero/jobs/cse/in/ingest_test/'
     PROJECT = 'cse_test_056'
     project = PROJECT
-
-
 
 
 # def board_publish(login, password, project, board_dir, upload_to_kitsu=False):
@@ -165,10 +163,9 @@ def process_directory():
     gazu.log_in("admin@example.com", "mysecretpassword")
 
 
-    # Fetch zou data
+    # Fetch zou data0
     zou_project = gazu.project.get_project_by_name(project)
-    # board = gazu.task.get_task_type_by_name("Board")
-    # real = gazu.task.get_task_status_by_name("Real")
+
     # shots = {
     #     shot["name"]: shot
     #     for shot in gazu.shot.all_shots_for_project(zou_project)
@@ -181,7 +178,7 @@ def process_directory():
     task_type = gazu.task.get_task_type_by_name("Concept")
     task_status = gazu.task.get_task_status_by_short_name("wfa")
 
-    # print(assets)
+
     # Register pyblish plugins
     pyblish.api.register_host("shell")
     openpype_path = Path(os.environ["OPENPYPE_REPOS_ROOT"])
@@ -195,17 +192,10 @@ def process_directory():
     )
 
     # Set missing context keys
+    os.environ["AVALON_APP"] = 'Photoshop'
     os.environ["AVALON_PROJECT"] = project
     os.environ["AVALON_PROJECT_LOWER"] = project.lower()
-    os.environ["AVALON_TASK"] = "Board"
-
-
-    # files = pathlib.Path(DIRECTORY).glob('*')
-
-    # for file in files:
-    #     print(file)
-
-    # print(assets.keys())
+    os.environ["AVALON_TASK"] = "Concept"
 
     for filepath in Path(DIRECTORY).iterdir():
 
@@ -216,16 +206,6 @@ def process_directory():
         # print(best_match)
 
         asset = assets.get(best_match)
-        # for key in assets.keys():
-            # print(best_match, key)
-            # if best_match == key:
-                # print("Yes")
-        # print(asset)
-        # Get related zou asset
-        # asset = shots.get(filepath.stem)
-        # print(filepath.stem)
-        # if not shot:
-        #     continue
 
         # Get related zou task
         print(task_type)
@@ -235,23 +215,9 @@ def process_directory():
         if not task:
             continue
 
-        # # Upload to Kitsu
-        # # if upload_to_kitsu and task["task_status_id"] != real["id"]:
-        if True:
-            comment = gazu.task.add_comment(task, task_status, f"Original: {filepath}")
-            preview = gazu.task.add_preview(
-                task,
-                comment,
-                preview_file_path=filepath,
-            )
-            gazu.task.set_main_preview(preview)
 
-        # Build shot appropriate name
-        # seq = gazu.shot.get_sequence_from_shot(shot)
-        # shot_name = "_".join([seq["episode_name"], seq["name"], filepath.stem])
 
         # Build required pyblish data
-        # asset['name']
         os.environ["AVALON_ASSET"] = asset['name']
         context = pyblish.api.Context()
         instance = context.create_instance(name=asset['name'])
@@ -287,6 +253,22 @@ def process_directory():
             if not result["success"]:
                 raise result.get("error")
 
+
+        # # Upload to Kitsu
+        # # if upload_to_kitsu and task["task_status_id"] != real["id"]:
+        # if ext in ["jpg", "png"]:
+        #     preview_file_path = filepath
+        # else:
+        #     print(f">>>>>>>>>>>>>>>>>>>>>>>>> need to find a jpeg for {filepath}")
+        #     print(instance.data)
+        #     preview_file_path = None  #
+        # comment = gazu.task.add_comment(task, task_status, f"Ingested from: {filepath}")
+        # preview = gazu.task.add_preview(
+        #     task,
+        #     comment,
+        #     preview_file_path=preview_file_path,
+        # )
+        # gazu.task.set_main_preview(preview)
 
 
 @cli_main.command()
