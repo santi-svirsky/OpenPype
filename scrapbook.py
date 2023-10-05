@@ -1233,9 +1233,9 @@ def main2(env):
     import openpype.pipeline.context_tools
     # c = openpype.pipeline.context_tools.get_global_context()
     # print(c)
-   
+
     print(openpype.pipeline.context_tools.get_current_context())
-    
+
     # openpype.pipeline.context_tools.
     from openpype.client import (
         get_project,
@@ -1251,7 +1251,7 @@ def main2(env):
     tp = traypipe.TrayPublisherHost()
     print(tp.get_current_project_name())
     tp.set_project_name(project_name)
-    
+
     # print(tp.get_current_project_name())
     print(tp.get_context_data())
 
