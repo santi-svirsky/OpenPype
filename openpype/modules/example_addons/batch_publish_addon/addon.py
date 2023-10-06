@@ -14,6 +14,9 @@ import pyblish
 from pathlib import Path
 import gazu
 from fuzzywuzzy import fuzz, process
+from openpype.hosts.batchpublisher import BatchPublisherHost
+from openpype.pipeline import install_host
+
 
 from openpype.modules import (
     JsonFilesSettingsDef,
@@ -137,6 +140,20 @@ class BatchPublishAddon(OpenPypeAddOn, IPluginPaths, ITrayAction):
 def cli_main():
     pass
 
+@cli_main.command()
+def test2():
+    
+    host = BatchPublisherHost()
+    install_host(host)
+    print(1)
+    # print(host.get_context_data())
+    # print(type(host.get_context_data()))
+    # print(Path(host.get_context_data()).read_text())
+    host.set_project_name('cse_test_056')
+    # print(host
+        #   from pathlib import Path
+    print(2)
+    print(host.get_context_data())
 
 @cli_main.command()
 def process_directory():
