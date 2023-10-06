@@ -269,3 +269,133 @@ def update_placeholder(*args):
     window = WorkfileBuildPlaceholderDialog(host, builder)
     window.set_update_mode(placeholder_item)
     window.exec_()
+
+
+
+def build_workfile_sequence_template(*args, **kwargs):
+    from openpype.pipeline import get_current_context
+    from openpype.client import get_assets, get_asset_by_name
+
+    context = get_current_context()
+    stub = get_stub()
+    current_comp = stub.get_selected_items(True)
+
+    if len(current_comp) == 0:
+        stub.print_msg("Select a comp to build")
+        return
+    elif len(current_comp) > 1:
+        stub.print_msg("More than one comp selected."
+                       "Building can be done only on one comp at a time.")
+        return
+    else:
+        # print(current_comp)
+        current_comp = current_comp[0]
+
+    existing_folders = stub.get_items(False, folders=True)
+    existing_folders_name = [folder.name for folder in existing_folders]
+
+    current_asset = get_asset_by_name(context["project_name"],
+                                      context["asset_name"])
+
+    child_assets = get_assets(context["project_name"],
+                              parent_ids=[current_asset["_id"]])
+
+    error_messages = []
+
+    previous_end = 0
+
+    for asset in child_assets:
+        asset_name = asset["name"]
+        asset_start = int(asset["data"]["frameStart"])
+        asset_end = int(asset["data"]["frameEnd"])
+        print("Processing:", asset_name)
+
+        if asset_name not in existing_folders_name:
+            try:
+                asset_workfile = get_last_workfile_path(
+                    context["project_name"], asset_name, "Compositing")
+
+                import_options = {}
+                import_options['ImportAsType'] = 'ImportAsType.PROJECT'
+                stub.import_file(asset_workfile, asset_name, import_options)
+
+                # Find recently imported comp.
+                # No way to filter by folders for granularity :(
+                imported_comp = get_comp_by_name("renderCompositingMain")
+                stub.rename_item(imported_comp.id,
+                                 "{}_{}".format(asset_name, imported_comp.name)
+                                 )
+
+                stub.add_item_as_layer_with_offset(current_comp.id,
+                                                   imported_comp.id,
+                                                   previous_end)
+            except AttributeError as err:
+                error_messages.append((asset_name, str(err)))
+                stub.log.error("{}: {}\n".format(asset_name, str(err)))
+            except ValueError as err:
+                # jsx addItemAsLayerToComp does not return a JSON
+                # and that raises an error.
+                # Not sure if the JSON is needed
+                if str(err) == "Received broken JSON undefined":
+                    pass
+                else:
+                    error_messages.append((asset_name, str(err)))
+                    stub.log.error("{}: {}\n".format(asset_name, str(err)))
+
+            previous_end += asset_end
+
+    if error_messages:
+        stub.print_msg("There were errors while importing. Check the console.")
+
+
+def get_comp_by_name(comp_name):
+    stub = get_stub()
+    for item in stub.get_items(True):
+        if item.name == comp_name:
+            # print("Found", comp_name, item)
+            return item
+
+
+def get_last_workfile_path(project_name, asset_name, task_name):
+    # COPIED FROM openpype\hosts\photoshop\api\launch_logic.py
+    from openpype.pipeline.workfile import (
+        get_workfile_template_key_from_context,
+        get_last_workfile
+    )
+    from openpype.pipeline import (
+        registered_host,
+        Anatomy,
+    )
+    from openpype.pipeline.template_data import get_template_data_with_names
+    from openpype.lib import Logger, StringTemplate
+
+    """Returns last workfile path if exists"""
+    host = registered_host()
+    host_name = host.name
+    template_key = get_workfile_template_key_from_context(
+        asset_name,
+        task_name,
+        host_name,
+        project_name=project_name
+    )
+    anatomy = Anatomy(project_name)
+
+    data = get_template_data_with_names(
+        project_name, asset_name, task_name, host_name
+    )
+    data["root"] = anatomy.roots
+
+    file_template = anatomy.templates[template_key]["file"]
+
+    # Define saving file extension
+    extensions = host.get_workfile_extensions()
+
+    folder_template = anatomy.templates[template_key]["folder"]
+    work_root = StringTemplate.format_strict_template(
+        folder_template, data
+    )
+    last_workfile_path = get_last_workfile(
+        work_root, file_template, data, extensions, True
+    )
+
+    return last_workfile_path
