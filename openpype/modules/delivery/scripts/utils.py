@@ -43,11 +43,9 @@ def create_metadata_path(instance_data):
 
 
 def replace_frame_number_with_token(path, token):
-    print(1)
     result = RE_FRAME_NUMBER.sub(
         r"\g<prefix>.{}.\g<extension>".format(token), path
     )
-    print(2)
     return result
 
 
@@ -78,44 +76,31 @@ def get_representations(
 
     """
     anatomy = Anatomy(instance_data["project"])
-    print(5)
     representations = []
-    print(6)
 
     for rep_name, file_path in exp_representations.items():
-        print(rep_name, file_path)
-        print(6.05)
         rep_frame_start = None
-        print(6.06)
         rep_frame_end = None
         ext = None
-        print(6.07)
         # Convert file path so it can be used with glob and find all the
         # frames for the sequence
         file_pattern = replace_frame_number_with_token(file_path, "*")
-        print(6.1, file_pattern)
         representation_files = glob.glob(file_pattern)
         collections, remainder = clique.assemble(representation_files)
-        print(6.2, remainder)
 
         # If file path is in remainder it means it was a single file
         if file_path in remainder:
-            print(file_path)
             collections = [remainder]
             frame_match = RE_FRAME_NUMBER.match(file_path)
             if frame_match:
-                print(6.3)
                 ext = frame_match.group("extension")
                 frame = frame_match.group("frame")
                 rep_frame_start = frame
                 rep_frame_end = frame
-                print(6.4)
             else:
-                print(6.5)
                 rep_frame_start = 1
                 rep_frame_end = 1
                 ext = os.path.splitext(file_path)[1][1:]
-                print(6.6)
 
         elif not collections:
             logger.warning(
@@ -123,7 +108,6 @@ def get_representations(
                 file_pattern
             )
             continue
-        print(7)
         if len(collections) > 1:
             logger.warning(
                 "More than one sequence find for the file pattern '%s'."

@@ -50,7 +50,6 @@ def publish_version(
         "version": publish_data.get("version"),
         "outputDir": os.path.dirname(source_path),
     }
-    print(1)
 
     representations = utils.get_representations(
         instance_data,
@@ -58,7 +57,6 @@ def publish_version(
         add_review=family_name in REVIEW_FAMILIES,
         publish_to_sg=family_name in PUBLISH_TO_SG_FAMILIES,
     )
-    print(2)
     if not representations:
         logger.error(
             "No representations could be found on expected dictionary: %s",
