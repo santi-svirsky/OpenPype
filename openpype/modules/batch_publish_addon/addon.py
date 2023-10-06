@@ -17,6 +17,8 @@ from fuzzywuzzy import fuzz, process
 from openpype.hosts.batchpublisher import BatchPublisherHost
 from openpype.pipeline import install_host
 
+from openpype.modules.batch_publish_addon.abstract_publish import publish_version
+
 
 from openpype.modules import (
     JsonFilesSettingsDef,
@@ -142,18 +144,17 @@ def cli_main():
 
 @cli_main.command()
 def test2():
-    
+
     host = BatchPublisherHost()
     install_host(host)
-    print(1)
-    # print(host.get_context_data())
-    # print(type(host.get_context_data()))
-    # print(Path(host.get_context_data()).read_text())
+
     host.set_project_name('cse_test_056')
-    # print(host
-        #   from pathlib import Path
-    print(2)
+    print(host.get_context_title())
     print(host.get_context_data())
+    representations = {"png": "/sombrero/jobs/_openpype/cse_test_056/puf_logo.1001.png"}
+    publish_version('cse_test_056', 'CSE101_01_001 ', 'Compositing', 'render', 'subset_name', representations, {})
+
+
 
 @cli_main.command()
 def process_directory():

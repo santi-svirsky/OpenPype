@@ -9,7 +9,7 @@ class MyExampleDialog(QtWidgets.QDialog):
 
         self.setWindowTitle("Connected modules")
 
-        msg = "This is example dialog of example addon."
+        msg = "Batch publish dialog."
         label_widget = QtWidgets.QLabel(msg, self)
 
         ok_btn = QtWidgets.QPushButton("OK", self)
