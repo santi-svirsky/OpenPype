@@ -185,6 +185,8 @@ def update_op_assets(
             tasks_list = gazu.task.all_tasks_for_asset(item)
         elif item_type == "Shot":
             tasks_list = gazu.task.all_tasks_for_shot(item)
+        elif item_type == "Sequence":
+            tasks_list = gazu.task.all_tasks_for_sequence(item)
         item_data["tasks"] = {
             t["task_type_name"]: {
                 "type": t["task_type_name"],
@@ -259,16 +261,19 @@ def update_op_assets(
             else:
                 ancestor_id = None
 
-        # Build OpenPype compatible name
-        if item_type in ["Shot", "Sequence"] and parent_zou_id is not None:
-            # Name with parents hierarchy "({episode}_){sequence}_{shot}"
-            # to avoid duplicate name issue
-            item_name = f"{item_data['parents'][-1]}_{item['name']}"
+        # # Build OpenPype compatible name   DISABLED AND REPLACED BY BLOCK BELOW
+        # if item_type in ["Shot", "Sequence"] and parent_zou_id is not None:
+        #     # Name with parents hierarchy "({episode}_){sequence}_{shot}"
+        #     # to avoid duplicate name issue
+        #     item_name = f"{item_data['parents'][-1]}_{item['name']}"
 
-            # Update doc name
-            asset_doc_ids[item["id"]]["name"] = item_name
-        else:
-            item_name = item["name"]
+        #     # Update doc name
+        #     asset_doc_ids[item["id"]]["name"] = item_name
+        # else:
+        #     item_name = item["name"]
+
+        # PASS NAME UNCHANGED:
+        item_name = item["name"]
 
         # Set root folders parents
         item_data["parents"] = [entity_root_asset_name] + item_data["parents"]

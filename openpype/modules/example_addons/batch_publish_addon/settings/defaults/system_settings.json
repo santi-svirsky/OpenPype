@@ -1,0 +1,5 @@
+{
+    "modules/batch_publish_addon": {
+        "enabled": true
+    }
+}
