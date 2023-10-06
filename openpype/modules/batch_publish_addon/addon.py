@@ -151,7 +151,7 @@ def test2():
     host.set_project_name('cse_test_056')
     print(host.get_context_title())
     print(host.get_context_data())
-    representations = {"png": "/sombrero/jobs/_openpype/cse_test_056/puf_logo.1001.png"}
+    representations = {"png": "Y:/WORKS/cse/in/20231002/09_Deliveries/2023.07.19/02_AE_Comp/02_Assets/SHOTS/CSE101_A001/ART/CSE101_BG_INT_Frances_Apartment_S10_V01.png"}
     publish_version('cse_test_056', 'CSE101_01_001 ', 'Compositing', 'render', 'subset_name', representations, {})
 
 
