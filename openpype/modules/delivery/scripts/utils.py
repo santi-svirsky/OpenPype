@@ -15,10 +15,9 @@ logger = Logger.get_logger(__name__)
 
 # Regular expression that allows us to replace the frame numbers of a file path
 # with any string token
-RE_FRAME_NUMBER = re.compile(
-    r"(?P<prefix>^(.*)+)\.(?P<frame>\d+)\.(?P<extension>\w+\.?(sc|gz)?$)"
-)
+RE_FRAME_NUMBER = re.compile("(?P<prefix>.*?)(?P<frame>(?<=[_\.])\d+(?=[_\.]))\.(?P<extension>\w+\.?(?:sc|gz)?)$")
 
+# previous RE:   r"(?P<prefix>^(.*)+)\.(?P<frame>\d+)\.(?P<extension>\w+\.?(sc|gz)?$)"
 
 def create_metadata_path(instance_data):
     # Ensure output dir exists
@@ -84,10 +83,13 @@ def get_representations(
         ext = None
         # Convert file path so it can be used with glob and find all the
         # frames for the sequence
+        print(file_path)
         file_pattern = replace_frame_number_with_token(file_path, "*")
         representation_files = glob.glob(file_pattern)
+        print(file_pattern, representation_files)
         collections, remainder = clique.assemble(representation_files)
 
+        print(collections, remainder)
         # If file path is in remainder it means it was a single file
         if file_path in remainder:
             collections = [remainder]

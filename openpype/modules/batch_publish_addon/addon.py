@@ -61,7 +61,7 @@ class BatchPublishAddon(OpenPypeAddOn, IPluginPaths, ITrayAction):
     - `IPluginPaths` to define custom plugin paths
     - `ITrayAction` to be shown in tray tool
     """
-    label = "Batch publish Addon"
+    label = "Batch publish"
     name = "batch_publish_addon"
 
     def initialize(self, settings):
@@ -142,6 +142,7 @@ class BatchPublishAddon(OpenPypeAddOn, IPluginPaths, ITrayAction):
 def cli_main():
     pass
 
+
 @cli_main.command()
 def test2():
 
@@ -149,71 +150,85 @@ def test2():
     install_host(host)
 
     host.set_project_name('cse_test_056')
-    print(host.get_context_title())
-    print(host.get_context_data())
-    representations = {"png": "Y:/WORKS/cse/in/20231002/09_Deliveries/2023.07.19/02_AE_Comp/02_Assets/SHOTS/CSE101_A001/ART/CSE101_BG_INT_Frances_Apartment_S10_V01.png"}
-    publish_version('cse_test_056', 'CSE101_01_001 ', 'Compositing', 'render', 'subset_name', representations, {})
+    # print(host.get_context_title())
+    # print(host.get_context_data())
+    filepath = Path("/sombrero/jobs/cse/in/20231002/09_Deliveries/2023.07.19/02_AE_Comp/02_Assets/SHOTS/CSE101_A001/ART/CSE101_BG_INT_Frances_Apartment_S10_V01.png")
+    # representations = {"png": str(filepath)}
 
+    ext = filepath.suffix.strip(".")
+    representation = {
+        "name": ext,
+        "ext": ext,
+        "preview": True,
+        "tags": ["review"],
+        "files": filepath.name,
+        "stagingDir": filepath.parent,
+    }
+    representations = {'png': str(filepath)}
+
+    publish_version('cse_test_056', 'CSE101_01_001 ', 'Compositing', 'render', 'subset_name', representations, {})
+    # host.get_current_asset_name
 
 
 @cli_main.command()
-def process_directory():
-    """Processes input directory. Walks through source, fuzzy-matches to OP assets and publishes."""
-    print("You've triggered \"process_directory\" command.")
-    DIRECTORY = '/sombrero/jobs/cse/in/ingest_test/'
-    PROJECT = 'cse_test_056'
-    project = PROJECT
+def test3():
+    # """Processes input directory. Walks through source, fuzzy-matches to OP assets and publishes."""
+    # print("You've triggered \"process_directory\" command.")
+    # DIRECTORY = '/sombrero/jobs/cse/in/ingest_test/'
+    # PROJECT = 'cse_test_056'
+    # project = PROJECT
+    # # pyblish.api.register_host("batch_publisher")
 
 
-# def board_publish(login, password, project, board_dir, upload_to_kitsu=False):
-#     """Synchronize openpype database from Zou sever database.
+    # # def board_publish(login, password, project, board_dir, upload_to_kitsu=False):
+    # #     """Synchronize openpype database from Zou sever database.
 
-#     Args:
-#         login (str): Kitsu user login
-#         password (str): Kitsu user password
-#         project (str): Project name
-#         board_dir (str): Path to storyboard shot movies directory
-#         upload_to_kitsu (bool): Upload directly to Kitsu
-#     """
-    # validate_credentials(login, password)
+    # #     Args:
+    # #         login (str): Kitsu user login
+    # #         password (str): Kitsu user password
+    # #         project (str): Project name
+    # #         board_dir (str): Path to storyboard shot movies directory
+    # #         upload_to_kitsu (bool): Upload directly to Kitsu
+    # #     """
+    # # validate_credentials(login, password)
 
-    gazu.set_host("http://10.68.150.36/api")  # PROD
-    gazu.log_in("admin@example.com", "mysecretpassword")
+    # gazu.set_host("http://10.68.150.36/api")  # PROD
+    # gazu.log_in("admin@example.com", "mysecretpassword")
 
 
-    # Fetch zou data0
-    zou_project = gazu.project.get_project_by_name(project)
+    # # Fetch zou data0
+    # zou_project = gazu.project.get_project_by_name(project)
 
-    # shots = {
-    #     shot["name"]: shot
-    #     for shot in gazu.shot.all_shots_for_project(zou_project)
+    # # shots = {
+    # #     shot["name"]: shot
+    # #     for shot in gazu.shot.all_shots_for_project(zou_project)
+    # # }
+    # # print(shots)
+    # assets = {
+    #     asset["name"]: asset
+    #     for asset in gazu.asset.all_assets_for_project(zou_project)
     # }
-    # print(shots)
-    assets = {
-        asset["name"]: asset
-        for asset in gazu.asset.all_assets_for_project(zou_project)
-    }
-    task_type = gazu.task.get_task_type_by_name("Concept")
-    task_status = gazu.task.get_task_status_by_short_name("wfa")
+    # task_type = gazu.task.get_task_type_by_name("Concept")
+    # task_status = gazu.task.get_task_status_by_short_name("wfa")
 
 
-    # Register pyblish plugins
-    pyblish.api.register_host("shell")
-    openpype_path = Path(os.environ["OPENPYPE_REPOS_ROOT"])
-    pyblish.api.register_plugin_path(
-        openpype_path.joinpath("openpype/plugins/publish").as_posix()
-    )
-    pyblish.api.register_plugin_path(
-        openpype_path.joinpath(
-            "openpype/hosts/standalonepublisher/plugins/publish"
-        ).as_posix()
-    )
+    # # Register pyblish plugins
+    # pyblish.api.register_host("shell")
+    # openpype_path = Path(os.environ["OPENPYPE_REPOS_ROOT"])
+    # pyblish.api.register_plugin_path(
+    #     openpype_path.joinpath("openpype/plugins/publish").as_posix()
+    # )
+    # pyblish.api.register_plugin_path(
+    #     openpype_path.joinpath(
+    #         "openpype/hosts/standalonepublisher/plugins/publish"
+    #     ).as_posix()
+    # )
 
-    # Set missing context keys
-    os.environ["AVALON_APP"] = 'Photoshop'
-    os.environ["AVALON_PROJECT"] = project
-    os.environ["AVALON_PROJECT_LOWER"] = project.lower()
-    os.environ["AVALON_TASK"] = "Concept"
+    # # Set missing context keys
+    # os.environ["AVALON_APP"] = 'Photoshop'
+    # os.environ["AVALON_PROJECT"] = project
+    # os.environ["AVALON_PROJECT_LOWER"] = project.lower()
+    # os.environ["AVALON_TASK"] = "Concept"
 
     for filepath in Path(DIRECTORY).iterdir():
 
