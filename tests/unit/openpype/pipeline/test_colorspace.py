@@ -26,8 +26,9 @@ class TestPipelineColorspace(TestPipeline):
 
     Example:
         cd to OpenPype repo root dir
-        poetry run python ./start.py runtests ../tests/unit/openpype/pipeline
-    """
+        poetry run python ./start.py runtests <openpype_root>/tests/unit/openpype/pipeline/test_colorspace.py
+    """  # noqa: E501
+
     TEST_FILES = [
         (
             "1csqimz8bbNcNgxtEXklLz6GRv91D3KgA",

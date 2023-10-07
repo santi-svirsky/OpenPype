@@ -23,7 +23,10 @@ log = Logger.get_logger(__name__)
 
 
 class CachedData:
-    remapping = {}
+    remapping = None
+    has_compatible_ocio_package = None
+    config_version_data = {}
+    ocio_config_colorspaces = {}
     allowed_exts = {
         ext.lstrip(".") for ext in IMAGE_EXTENSIONS.union(VIDEO_EXTENSIONS)
     }
@@ -451,18 +454,15 @@ def _get_wrapped_with_subprocess(command_group, command, **kwargs):
 
 # TODO: this should be part of ocio_wrapper.py
 def compatibility_check():
-    """checking if user has a compatible PyOpenColorIO >= 2.
+    """Making sure PyOpenColorIO is importable"""
+    if CachedData.has_compatible_ocio_package is not None:
+        return CachedData.has_compatible_ocio_package
 
-    It's achieved by checking if PyOpenColorIO is importable
-    and calling any version 2 specific function
-    """
     try:
-        import PyOpenColorIO
-
-        # ocio versions lower than 2 will raise AttributeError
-        PyOpenColorIO.GetVersion()
-    except (ImportError, AttributeError):
-        return False
+        import PyOpenColorIO  # noqa: F401
+        CachedData.has_compatible_ocio_package = True
+    except ImportError:
+        CachedData.has_compatible_ocio_package = False
 
     # compatible
     return CachedData.has_compatible_ocio_package
