@@ -127,15 +127,15 @@ class BatchPublishAddon(OpenPypeAddOn, IPluginPaths, ITrayAction):
     def cli(self, click_group):
         click_group.add_command(cli_main)
 
-    def get_global_environments(self):
-        """Get addon global environments.
+    # def get_global_environments(self):
+    #     """Get addon global environments.
 
-        Use standalone publisher for asset publishing
-        """
-        return {
-            "AVALON_APP_NAME": "standalonepublisher",
-            "AVALON_APP": "standalonepublisher",
-        }
+    #     Use standalone publisher for asset publishing
+    #     """
+    #     return {
+    #         "AVALON_APP_NAME": "batch_publish_addon",
+    #         "AVALON_APP": "batch_publish_addon",
+    #     }
 
 
 @click.group(BatchPublishAddon.name, help="Example addon dynamic cli commands.")
@@ -144,7 +144,7 @@ def cli_main():
 
 @cli_main.command()
 def test2():
-    
+
     host = BatchPublisherHost()
     install_host(host)
     print(1)

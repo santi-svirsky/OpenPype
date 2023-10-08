@@ -71,9 +71,9 @@ def publish_version(
             logger.debug(
                 "Setting colorspace '%s' to representation", source_colorspace
             )
-            utils.set_representation_colorspace(
-                rep, project_name, colorspace=source_colorspace
-            )
+            # utils.set_representation_colorspace(
+            #     rep, project_name, colorspace=source_colorspace
+            # )
 
     instance_data["frameStartHandle"] = representations[0]["frameStart"]
     instance_data["frameEndHandle"] = representations[0]["frameEnd"]

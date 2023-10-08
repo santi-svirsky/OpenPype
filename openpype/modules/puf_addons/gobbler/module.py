@@ -5,9 +5,21 @@ import pyblish
 import click
 
 from openpype.modules import OpenPypeModule
+from openpype.pipeline.create import CreateContext
 # from abstract_publish import publish_version
+from openpype.client import get_project, get_asset_by_name
+from openpype.pipeline.context_tools import change_current_context
+
 from openpype.modules.puf_addons.gobbler.easy_publish import publish_version
-from openpype.hosts.batchpublisher import BatchPublisherHost
+# from openpype.hosts.batchpublisher import BatchPublisherHost
+
+from openpype.modules.kitsu.utils.credentials import (
+    clear_credentials,
+    load_credentials,
+    save_credentials,
+    set_credentials_envs,
+    validate_credentials,
+)
 
 # from .lib import find_app_variant
 # from .run_script import (
@@ -167,7 +179,7 @@ def publish(project_name,
               help="Directory to gobble")
 def go(project_name, directory=None):
     print("GO!")
-
+    os.environ["AVALON_PROJECT"] = project_name
     from openpype.lib import Logger
     from openpype.lib.applications import (
         get_app_environments_for_context,
@@ -181,34 +193,62 @@ def go(project_name, directory=None):
     from openpype.tools.utils.host_tools import show_publish
     from openpype.tools.utils.lib import qt_app_context
 
+    from openpype.modules.kitsu import KitsuModule
     # Register target and host
     import pyblish.api
     import pyblish.util
 
     log = Logger.get_logger("CLI-publish")
 
+    # env
+    # env = os.environ.copy()
+    # kitsu
+    # env["KITSU_SERVER"] = 'http://10.68.150.36/'
+    # env["KITSU_LOGIN"], = 'admin@example.com'
+    # env["KITSU_PWD"] = 'mysecretpassword'
+
+
+    # clear_credentials,
+    (l, p) = load_credentials()
+    # print(load_credentials)
+    # save_credentials,
+    set_credentials_envs(l, p)
+
+    # kitsu = KitsuModule()
+    # kitsu.initialize()
+
+    # validate_credentials,
+    # ???
     x = pyblish.api.register_host("batchpublisher")
     print(x)
-    host = BatchPublisherHost()
-    host.set_project_name(project_name)
-    print(host.get_current_asset_name())
-    print(host.get_current_context())
-    print(host.get_context_data())
 
-    print(dir(host))
+    # import pyblish.util
+    # context = pyblish.util.collect()
+    # print(context)
+    # host = BatchPublisherHost()
+    # host.set_project_name(project_name)
+    # print(host.get_current_asset_name())
+    # print(host.get_current_context())
+    # print(host.get_context_data())
+
+    # print(dir(host))
     # install_openpype_plugins()
 
     manager = ModulesManager()
 
-    for item in manager.get_enabled_modules():
-        print(item)
-    publish_paths = manager.collect_plugin_paths()["publish"]
+    # for item in manager.get_enabled_modules():
+        # print(item)
+    publish_plugin_paths = manager.collect_plugin_paths()["publish"]
 
-    for path in publish_paths:
+    for path in publish_plugin_paths:
         pyblish.api.register_plugin_path(path)
         print(path)
+
     # if not any(paths):
     #     raise RuntimeError("No publish paths specified")
+
+    # self.data["asset_doc"] = asset_doc
+    # asset_doc = get_asset_by_id(project_name, folder["id"])
 
     asset_name = "CSE101_BG_EXT_BoaBranch"
     family_name = "render"
@@ -216,6 +256,38 @@ def go(project_name, directory=None):
     subset_name = "BoaBranch"
     expected_representations = {"png": "/home/santi/Screenshots/snip_20231007-185838.png"}
     publish_data = {}
+
+
+    # project_doc = get_project(project_name)
+    # project_doc = project_doc
+
+    asset_doc = get_asset_by_name(project_name, asset_name)
+
+    # change_current_context(
+    #     asset_doc,
+    #     task_name,
+    #     # template_key=template_key
+    # )
+
+
+
+
+
+
+    from openpype.hosts.traypublisher.api import TrayPublisherHost
+    from openpype.pipeline import install_host
+
+    class FakeHost(TrayPublisherHost):
+        name = "fake"
+
+    host = FakeHost()
+    install_host(host)
+
+    print(f"<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>> {os.environ.get('AVALON_PROJECT')}")
+    # host = registered_host()
+    context = CreateContext(host)
+
+
 
     publish_version(project_name,
                     asset_name,

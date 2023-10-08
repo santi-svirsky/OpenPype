@@ -103,6 +103,7 @@ class KitsuModule(OpenPypeModule, IPluginPaths, ITrayAction):
 
 @click.group(KitsuModule.name, help="Kitsu dynamic cli commands.")
 def cli_main():
+    print("<<<>>>>>>>> kitsu module cli_main")
     pass
 
 
