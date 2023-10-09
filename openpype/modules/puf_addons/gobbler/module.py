@@ -13,13 +13,13 @@ from openpype.pipeline.context_tools import change_current_context
 from openpype.modules.puf_addons.gobbler.easy_publish import publish_version
 # from openpype.hosts.batchpublisher import BatchPublisherHost
 
-from openpype.modules.kitsu.utils.credentials import (
-    clear_credentials,
-    load_credentials,
-    save_credentials,
-    set_credentials_envs,
-    validate_credentials,
-)
+# from openpype.modules.kitsu.utils.credentials import (
+#     clear_credentials,
+#     load_credentials,
+#     save_credentials,
+#     set_credentials_envs,
+#     validate_credentials,
+# )
 
 # from .lib import find_app_variant
 # from .run_script import (
@@ -198,7 +198,7 @@ def go(project_name, directory=None):
     import pyblish.api
     import pyblish.util
 
-    log = Logger.get_logger("CLI-publish")
+    # log = Logger.get_logger("CLI-publish")
 
     # env
     # env = os.environ.copy()
@@ -207,19 +207,20 @@ def go(project_name, directory=None):
     # env["KITSU_LOGIN"], = 'admin@example.com'
     # env["KITSU_PWD"] = 'mysecretpassword'
 
-
-    # clear_credentials,
-    (l, p) = load_credentials()
-    # print(load_credentials)
-    # save_credentials,
-    set_credentials_envs(l, p)
-
     # kitsu = KitsuModule()
-    # kitsu.initialize()
+    # kitsu.admin_action
+    # clear_credentials,
+    # (l, p) = load_credentials()
+    # # print(load_credentials)
+    # # save_credentials,
+    # set_credentials_envs(l, p)
+
+    kitsu = KitsuModule()
+    kitsu.initialize()
 
     # validate_credentials,
     # ???
-    x = pyblish.api.register_host("batchpublisher")
+    x = pyblish.api.register_host("gobbler")
     print(x)
 
     # import pyblish.util
