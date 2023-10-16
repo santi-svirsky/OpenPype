@@ -13,9 +13,9 @@ from openpype.client import get_project, get_asset_by_name
 import openpype.client as client
 from openpype.pipeline.context_tools import change_current_context
 
-from openpype.modules.puf_addons.gobbler import easy_publish # IMPORT SHOULD BE RELATIVE
+from . import easy_publish
 
-# from openpype.hosts.traypublisher.api import TrayPublisherHost
+from openpype.hosts.traypublisher.api import TrayPublisherHost
 from openpype.pipeline import install_host
 from openpype.lib import Logger
 
@@ -64,10 +64,21 @@ def go(project_name, directory=None):
     print("GO!")
     import pyblish.api
     import pyblish.util
-    pyblish.api.register_host("gobbler")
+    pyblish.api.register_host("standalonepublisher")
 
     os.environ["AVALON_PROJECT"] = project_name
 
+    # host = GobblerHost()
+    # install_host(host)
+    # host.install()
+    # print(host.name)
+    # print(host.get_current_asset_name())
+
+    # host.set_project_name(project_name)
+    # print(host.get_context_data())
+    # host.
+    # data = json.loads(host.get_context_data())
+    # print(data)
     assets_list = list(client.get_assets(project_name))
     assets_dict = {asset['name']: asset for asset in assets_list}  # creating a dict {asset_name: asset} for quickly looking up assets by name later.
 
@@ -78,6 +89,8 @@ def go(project_name, directory=None):
     for item in items_to_publish:
 
         asset = _fuzz_asset(item.basename(), assets_dict)  # fuzzy match asset
+
+        # host.update_context_data()
         asset_name = asset['name']
         extension = item.extension().strip('.')
 
@@ -94,6 +107,7 @@ def go(project_name, directory=None):
         task_name = "Concept"
         subset_name = "Input"
         publish_data = {}
+        batch_name = str(directory)
 
         easy_publish.publish_version(project_name,
                         asset_name,
@@ -102,7 +116,7 @@ def go(project_name, directory=None):
                         subset_name,
                         expected_representations,
                         publish_data,
-                        str(directory),)
+                        batch_name,)
 
 
 def _fuzz_asset(item, assets_dict):
