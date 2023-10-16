@@ -30,11 +30,12 @@ def publish_version(
     subset_name,
     expected_representations,
     publish_data,
+    batch_name,
 ):
     # TODO: write some logic that finds the main path from the list of
     # representations
     source_path = list(expected_representations.values())[0]
-
+    print(source_path)
     instance_data = {
         "project": project_name,
         "family": family_name,
@@ -77,6 +78,9 @@ def publish_version(
 
     instance_data["frameStartHandle"] = representations[0]["frameStart"]
     instance_data["frameEndHandle"] = representations[0]["frameEnd"]
+    instance_data["frameStart"] = representations[0]["frameStart"]
+    instance_data["frameEnd"] = representations[0]["frameEnd"]
+    instance_data["fps"] = 23.976
 
     # add representation
     instance_data["representations"] = representations
@@ -117,6 +121,8 @@ def publish_version(
         "OPENPYPE_REMOTE_JOB": "0",
         "OPENPYPE_LOG_NO_COLORS": "1",
         "OPENPYPE_SG_USER": username,
+        "KITSU_LOGIN": "admin@example.com",
+        "KITSU_PWD": "mysecretpassword",
     }
 
     deadline_task_name = "Publish {} - {} - {} - {} - {}".format(
@@ -130,12 +136,16 @@ def publish_version(
     response = submit.payload_submit(
         plugin="OpenPype",
         plugin_data=plugin_data,
-        batch_name=publish_data.get("jobBatchName") or deadline_task_name,
+        batch_name=batch_name,
+        # batch_name=publish_data.get("jobBatchName") or deadline_task_name,
         task_name=deadline_task_name,
         group=dl_constants.OP_GROUP,
         extra_env=extra_env,
     )
-
+    print(">>>>>>>>>>>>>>> DEBUG >>>>>>>>>>>>>")
+    print(legacy_io.Session)
+    legacy_io.install()
+    print(legacy_io.Session)
     # publish job file
     publish_job = {
         "asset": instance_data["asset"],
