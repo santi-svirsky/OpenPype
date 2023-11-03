@@ -100,6 +100,7 @@ def gobble(project_name, input_dir):
     # walk directory and find items to publish
     items_to_publish = _find_sources(directory)
 
+    log.info(f"Found {len(items_to_publish)} items to publish")
     # MAIN LOOP
     for item in items_to_publish:
         # fuzzy match asset
@@ -110,7 +111,7 @@ def gobble(project_name, input_dir):
         search_term = os.path.relpath(item[0], start=directory)
         item_name = os.path.basename(item[0])
 
-        log.info(f"Repr: {representations.keys()}")
+        # log.info(f"Repr: {representations.keys()}")
         # PRODUCTION LOGIC
         if 'psd' in representations.keys(): # asset!
             log.info(f"asset!")
@@ -305,9 +306,16 @@ def _fuzz_asset(item, assets_dict):
     # Find asset in assets that best matches item
     from fuzzywuzzy import fuzz
     from fuzzywuzzy import process
+    from collections import Counter
 
     asset_names = assets_dict.keys()
-    best_match, _ = process.extractOne(str(item), asset_names)
+    best_match1, _ = process.extractOne(str(item), asset_names, scorer=fuzz.token_sort_ratio)
+    best_match2, _ = process.extractOne(str(item), asset_names, scorer=fuzz.token_set_ratio)
+    best_match3, _ = process.extractOne(str(item), asset_names, scorer=fuzz.partial_ratio)
+    best_match4, _ = process.extractOne(str(item), asset_names, scorer=fuzz.ratio)
+
+    c = Counter([best_match1, best_match2, best_match3, best_match4, ])
+    best_match, _ = c.most_common()[0]
 
     asset = assets_dict.get(best_match)
     log.info(f">>> Matched {item} to {asset['name']}")
@@ -315,6 +323,8 @@ def _fuzz_asset(item, assets_dict):
 
 
 def _find_sources(source_directory):
+
+    log.info(f"Looking for things to publish in {source_directory}")
     import fileseq
     results = list()
 
@@ -341,7 +351,7 @@ def _find_sources(source_directory):
                     log.info(f"sequence: {representation_path}")
                 else:  # single
                     representation_path = str(item)
-                    log.info(f"single file - no seq: {representation_path}")
+                    log.info(f"single file: {representation_path}")
                 representations_found[extension] = representation_path
             # log.info(f"Repr found: {representations_found}")
             publish_item = (representation_path, representations_found, item or None)
