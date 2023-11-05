@@ -125,8 +125,9 @@ def gobble(project_name, input_dir, matching_mode):
         # PRODUCTION LOGIC
 
         if matching_mode == 'structured':
-            search_term = os.path.relpath(item_path, start=directory).split("/")[0]
-
+            # search_term = os.path.relpath(item_path, start=directory).split("/")[0]
+            path = Path(os.path.relpath(item_path, start=directory))
+            search_term = path.parts[0]
         elif matching_mode == 'unstructured':
             search_term = os.path.splitext(os.path.basename(item_path))[0]
         # matching to shots only
