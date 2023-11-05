@@ -36,6 +36,8 @@ def publish_version(
 ):
     # TODO: write some logic that finds the main path from the list of
     # representations
+
+    # log.info(f"Will publish {}")
     source_path = list(expected_representations.values())[0]
     instance_data = {
         "project": project_name,

@@ -31,7 +31,8 @@ import pprint
 
 log = Logger.get_logger("Gobbler")
 
-# TODO: ADD GOOGLE PANDAS AND FUZZYWUZZY TO REQUIREMENTS
+KNOWN_FORMATS = ['mp4', 'psd', 'png']
+
 
 class GobblerModule(OpenPypeModule):
     label = "Gobble mess from client"
@@ -98,7 +99,7 @@ def gobble(project_name, input_dir):
 
 
     # walk directory and find items to publish
-    items_to_publish = _find_sources(directory)
+    items_to_publish = _find_sources(directory, KNOWN_FORMATS)
 
     log.info(f"Found {len(items_to_publish)} items to publish")
     # MAIN LOOP
@@ -113,34 +114,46 @@ def gobble(project_name, input_dir):
 
         # log.info(f"Repr: {representations.keys()}")
         # PRODUCTION LOGIC
-        if 'psd' in representations.keys(): # asset!
-            log.info(f"asset!")
-            asset = _fuzz_asset(search_term, assets_dict)
-            log.info(asset['name'])
-            is_shot = False
-        else:
-            asset = _fuzz_asset(search_term, shots_dict)
-            is_shot = True
+        # if 'psd' in representations.keys(): # asset!
+        #     log.info(f"asset!")
+        #     asset = _fuzz_asset(search_term, assets_dict)
+        #     log.info(asset['name'])
+        #     is_shot = False
+
+        # else:
+        # matching to shots only
+        asset = _fuzz_asset(search_term, shots_dict)
+        is_shot = True
         asset_name = asset['name']
 
-        if is_shot:
+        if 'psd' in list(representations.keys()):
+            # file is psd, so backgound
+            family_name = "render"
+            task_name = "Editorial"
+            subset_name = "background"
+
+        elif 'png' in list(representations.keys()):
+            # file is png and not bg, so anim
             family_name = "render"
             task_name = "Animation"
             if file_seq:
-                subset_name = file_seq.basename().lstrip(string.whitespace + "_")
+                subset_name = file_seq.basename().lstrip(string.whitespace + '_').rstrip(string.whitespace + '_')
             else:
                 subset_name = "renderAnimationMain"
 
+        elif 'mp4' in list(representations.keys()):
+            # includes mp4 and no png or psd, so assuming animatic
+            family_name = "plate"
+            task_name = "Editorial"
+            subset_name = "plateAnimatic"
+
         else:
-            family_name = "image"
-            task_name = "Concept"
-            subset_name = "imageTexture"
+            log.info(f"WARNING: {file_seq} passed all filters and wasn't properly linked to a task")
 
 
         publish_data = {
             "families": ["review"],
         }
-        log.info(f"{representations}")
         easy_publish.publish_version(project_name,
                                      asset_name,
                                      task_name,
@@ -322,7 +335,7 @@ def _fuzz_asset(item, assets_dict):
     return asset
 
 
-def _find_sources(source_directory):
+def _find_sources(source_directory, formats_list):
 
     log.info(f"Looking for things to publish in {source_directory}")
     import fileseq
@@ -339,19 +352,22 @@ def _find_sources(source_directory):
             for item in dir_contents:
                 # Append the sequence to the list
                 extension = item.extension().strip('.')
+                if extension in formats_list:
+                    if item.frameSet():  # if sequence
+                        # if item.frameSet().start() != item.frameSet().end():  # and not single-frame sequence
+                        #     representation_path = item.frame(item.start())
+                        #     log.info(f"sequence {representation_path}")
+                        # else:  # single-frame sequence, so single frame really
+                        #     representation_path = item.frame(item.start())
+                        #     log.info(f"single-frame seq: {representation_path}")
+                        representation_path = item.frame(item.start())
+                        log.info(f"sequence: {representation_path}")
+                    else:  # single
+                        representation_path = str(item)
+                        log.info(f"single file: {representation_path}")
+                else:
+                    log.warning(f"WARNING skipped {extension}")
 
-                if item.frameSet():  # if sequence
-                    # if item.frameSet().start() != item.frameSet().end():  # and not single-frame sequence
-                    #     representation_path = item.frame(item.start())
-                    #     log.info(f"sequence {representation_path}")
-                    # else:  # single-frame sequence, so single frame really
-                    #     representation_path = item.frame(item.start())
-                    #     log.info(f"single-frame seq: {representation_path}")
-                    representation_path = item.frame(item.start())
-                    log.info(f"sequence: {representation_path}")
-                else:  # single
-                    representation_path = str(item)
-                    log.info(f"single file: {representation_path}")
                 representations_found[extension] = representation_path
             # log.info(f"Repr found: {representations_found}")
             publish_item = (representation_path, representations_found, item or None)
