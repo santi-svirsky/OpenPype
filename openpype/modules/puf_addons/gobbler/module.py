@@ -340,6 +340,8 @@ def _find_sources(source_directory, formats_list):
     log.info(f"Looking for things to publish in {source_directory}")
     import fileseq
     results = list()
+    log_success = []
+    log_warnings = []
 
     for dirpath, dirnames, filenames in os.walk(source_directory):
         # Check if the file is part of a sequence
@@ -354,24 +356,29 @@ def _find_sources(source_directory, formats_list):
                 extension = item.extension().strip('.')
                 if extension in formats_list:
                     if item.frameSet():  # if sequence
-                        # if item.frameSet().start() != item.frameSet().end():  # and not single-frame sequence
-                        #     representation_path = item.frame(item.start())
-                        #     log.info(f"sequence {representation_path}")
-                        # else:  # single-frame sequence, so single frame really
-                        #     representation_path = item.frame(item.start())
-                        #     log.info(f"single-frame seq: {representation_path}")
                         representation_path = item.frame(item.start())
                         log.info(f"sequence: {representation_path}")
                     else:  # single
                         representation_path = str(item)
                         log.info(f"single file: {representation_path}")
-                else:
-                    log.warning(f"WARNING skipped {extension}")
+                    representations_found[extension] = representation_path
+                    item_found = item
 
-                representations_found[extension] = representation_path
+                else:
+                    log_warnings.append(f"Skipped {os.path.relpath(str(item), source_directory)} because extension is not in {formats_list}")
+                    # representation_path = None
+
             # log.info(f"Repr found: {representations_found}")
-            publish_item = (representation_path, representations_found, item or None)
+            if representations_found:
+                publish_item = (representation_path, representations_found, item_found)
             results.append(publish_item)
+
+
+        if log_warnings:
+            warn_count = len(log_warnings)
+            warn_string = '\n'.join(log_warnings)
+            log.warning(f"WARNINGS: {warn_count}: \n{warn_string}")
+
     # log.info(f"Results: {results}")
 
     return results
