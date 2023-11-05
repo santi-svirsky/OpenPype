@@ -15,8 +15,8 @@ logger = Logger.get_logger(__name__)
 
 REVIEW_FAMILIES = {
     "render",
-    "image"
-
+    "image",
+    "plate",
 }
 
 PUBLISH_TO_SG_FAMILIES = {
@@ -92,7 +92,7 @@ def publish_version(
 
     # Create farm job to run OP publish
     metadata_path = utils.create_metadata_path(instance_data)
-    logger.info("Metadata path: %s", metadata_path)
+    # logger.info("Metadata path: %s", metadata_path)
 
     publish_args = [
         "--headless",
@@ -176,7 +176,7 @@ def publish_version(
         "version": None
     }
 
-    logger.info("Writing json file: {}".format(metadata_path))
+    # logger.info("Writing json file: {}".format(metadata_path))
     with open(metadata_path, "w") as f:
         json.dump(publish_job, f, indent=4, sort_keys=True)
 

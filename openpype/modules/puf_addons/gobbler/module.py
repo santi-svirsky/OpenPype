@@ -69,7 +69,12 @@ def cli_main():
 @click.option("-i", "--input_dir",
               required=True,
               help="Directory to gobble")
-def gobble(project_name, input_dir):
+@click.option("-m", "--matching_mode",
+              required=False,
+              default='structured',
+              type=click.Choice(['structured', 'unstructured']),
+              help="Directory to gobble")
+def gobble(project_name, input_dir, matching_mode):
     '''Gobble folder and publish everything in it'''
     log.info(f"Will gobble {input_dir} to project {project_name}.")
     import pyblish.api
@@ -99,40 +104,46 @@ def gobble(project_name, input_dir):
 
 
     # walk directory and find items to publish
-    items_to_publish = _find_sources(directory, KNOWN_FORMATS)
+    if matching_mode == 'structured':
+        items_to_publish = _find_sources(directory, KNOWN_FORMATS)
+
+    elif matching_mode == 'unstructured':
+        items_to_publish = _find_sources_2(directory, KNOWN_FORMATS)
+
 
     log.info(f"Found {len(items_to_publish)} items to publish")
     # MAIN LOOP
     for item in items_to_publish:
         # fuzzy match asset
+        item_path = item[0]
+        item_name = os.path.basename(item_path)
         file_seq = item[2]
         representations = item[1]
         # search_term = search_term.replace(directory + "\\", "")
         # search_term = item[0]
-        search_term = os.path.relpath(item[0], start=directory)
-        item_name = os.path.basename(item[0])
 
-        # log.info(f"Repr: {representations.keys()}")
         # PRODUCTION LOGIC
-        # if 'psd' in representations.keys(): # asset!
-        #     log.info(f"asset!")
-        #     asset = _fuzz_asset(search_term, assets_dict)
-        #     log.info(asset['name'])
-        #     is_shot = False
 
-        # else:
+        if matching_mode == 'structured':
+            search_term = os.path.relpath(item_path, start=directory).split("/")[0]
+
+        elif matching_mode == 'unstructured':
+            search_term = os.path.splitext(os.path.basename(item_path))[0]
         # matching to shots only
         asset = _fuzz_asset(search_term, shots_dict)
-        is_shot = True
+        # is_shot = True
         asset_name = asset['name']
 
-        if 'psd' in list(representations.keys()):
+        will_publish = False
+
+        if 'psd' in list(representations.keys()) and 'background' in item_path.casefold():
             # file is psd, so backgound
             family_name = "render"
-            task_name = "Editorial"
+            task_name = "Edit"
             subset_name = "background"
+            will_publish = True
 
-        elif 'png' in list(representations.keys()):
+        elif 'png' in list(representations.keys()) and 'render' in item_path.casefold():
             # file is png and not bg, so anim
             family_name = "render"
             task_name = "Animation"
@@ -140,28 +151,32 @@ def gobble(project_name, input_dir):
                 subset_name = file_seq.basename().lstrip(string.whitespace + '_').rstrip(string.whitespace + '_')
             else:
                 subset_name = "renderAnimationMain"
+            will_publish = True
 
         elif 'mp4' in list(representations.keys()):
             # includes mp4 and no png or psd, so assuming animatic
             family_name = "plate"
-            task_name = "Editorial"
+            task_name = "Edit"
             subset_name = "plateAnimatic"
+            will_publish = True
 
         else:
-            log.info(f"WARNING: {file_seq} passed all filters and wasn't properly linked to a task")
+            log.info(f"WARNING: {item_path} passed all filters and wasn't properly linked to a task")
 
 
         publish_data = {
             "families": ["review"],
         }
-        easy_publish.publish_version(project_name,
-                                     asset_name,
-                                     task_name,
-                                     family_name,
-                                     subset_name,
-                                     representations,
-                                     publish_data,
-                                     batch_name,)
+
+        if will_publish:
+            easy_publish.publish_version(project_name,
+                                        asset_name,
+                                        task_name,
+                                        family_name,
+                                        subset_name,
+                                        representations,
+                                        publish_data,
+                                        batch_name,)
 
     # TODO: clean up staging directory
 
@@ -322,10 +337,10 @@ def _fuzz_asset(item, assets_dict):
     from collections import Counter
 
     asset_names = assets_dict.keys()
-    best_match1, _ = process.extractOne(str(item), asset_names, scorer=fuzz.token_sort_ratio)
-    best_match2, _ = process.extractOne(str(item), asset_names, scorer=fuzz.token_set_ratio)
-    best_match3, _ = process.extractOne(str(item), asset_names, scorer=fuzz.partial_ratio)
-    best_match4, _ = process.extractOne(str(item), asset_names, scorer=fuzz.ratio)
+    best_match1, s1 = process.extractOne(str(item), asset_names, scorer=fuzz.token_sort_ratio)
+    best_match2, s2 = process.extractOne(str(item), asset_names, scorer=fuzz.token_set_ratio)
+    best_match3, s3 = process.extractOne(str(item), asset_names, scorer=fuzz.partial_ratio)
+    best_match4, s4 = process.extractOne(str(item), asset_names, scorer=fuzz.ratio)
 
     c = Counter([best_match1, best_match2, best_match3, best_match4, ])
     best_match, _ = c.most_common()[0]
@@ -372,6 +387,47 @@ def _find_sources(source_directory, formats_list):
             if representations_found:
                 publish_item = (representation_path, representations_found, item_found)
             results.append(publish_item)
+
+
+        if log_warnings:
+            warn_count = len(log_warnings)
+            warn_string = '\n'.join(log_warnings)
+            log.warning(f"WARNINGS: {warn_count}: \n{warn_string}")
+
+    # log.info(f"Results: {results}")
+
+    return results
+
+
+
+def _find_sources_2(source_directory, formats_list):
+    # find only mp4 files
+
+    log.info(f"Looking in {source_directory} for mp4 files to publish")
+    # import fileseq
+    results = list()
+    log_success = []
+    log_warnings = []
+
+    for dirpath, dirnames, filenames in os.walk(source_directory):
+        # Check if the file is part of a sequence
+        dir_contents = list(Path(dirpath).glob("*.mp4"))
+        # log.info(sequence)
+
+        if dir_contents: # dir not empty
+            # log.info(f"Found {len(dir_contents)} items in {dirpath}")
+            for item in dir_contents:
+                # Append the sequence to the list
+
+                representation_path = str(item)
+                log.info(f"single file: {os.path.relpath(representation_path, start=source_directory)}")
+
+                representations_found = {}
+                representations_found["mp4"] = representation_path
+                item_found = item
+
+                publish_item = (representation_path, representations_found, item_found)
+                results.append(publish_item)
 
 
         if log_warnings:
