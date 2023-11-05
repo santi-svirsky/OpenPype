@@ -132,53 +132,56 @@ def gobble(project_name, input_dir, matching_mode):
             search_term = os.path.splitext(os.path.basename(item_path))[0]
         # matching to shots only
         asset = _fuzz_asset(search_term, shots_dict)
-        # is_shot = True
-        asset_name = asset['name']
 
-        will_publish = False
+        if asset: # found asset to publish to
+            asset_name = asset['name']
 
-        if 'psd' in list(representations.keys()) and 'background' in item_path.casefold():
-            # file is psd, so backgound
-            family_name = "render"
-            task_name = "Edit"
-            subset_name = "background"
-            will_publish = True
+            will_publish = False
 
-        elif 'png' in list(representations.keys()) and 'render' in item_path.casefold():
-            # file is png and not bg, so anim
-            family_name = "render"
-            task_name = "Animation"
-            if file_seq:
-                subset_name = file_seq.basename().lstrip(string.whitespace + '_').rstrip(string.whitespace + '_')
+            if 'psd' in list(representations.keys()) and 'background' in item_path.casefold():
+                # file is psd, so backgound
+                family_name = "render"
+                task_name = "Edit"
+                subset_name = "background"
+                will_publish = True
+
+            elif 'png' in list(representations.keys()) and 'render' in item_path.casefold():
+                # file is png and not bg, so anim
+                family_name = "render"
+                task_name = "Animation"
+                if file_seq:
+                    subset_name = file_seq.basename().lstrip(string.whitespace + '_').rstrip(string.whitespace + '_')
+                else:
+                    subset_name = "renderAnimationMain"
+                will_publish = True
+
+            elif 'mp4' in list(representations.keys()):
+                # includes mp4 and no png or psd, so assuming animatic
+                family_name = "plate"
+                task_name = "Edit"
+                subset_name = "plateAnimatic"
+                will_publish = True
+
             else:
-                subset_name = "renderAnimationMain"
-            will_publish = True
+                log.info(f"WARNING: {item_name} slipped through filters and was not properly matched to a task")
 
-        elif 'mp4' in list(representations.keys()):
-            # includes mp4 and no png or psd, so assuming animatic
-            family_name = "plate"
-            task_name = "Edit"
-            subset_name = "plateAnimatic"
-            will_publish = True
+
+            publish_data = {
+                "families": ["review"],
+            }
+
+            if will_publish:
+                easy_publish.publish_version(project_name,
+                                            asset_name,
+                                            task_name,
+                                            family_name,
+                                            subset_name,
+                                            representations,
+                                            publish_data,
+                                            batch_name,)
 
         else:
-            log.info(f"WARNING: {item_path} passed all filters and wasn't properly linked to a task")
-
-
-        publish_data = {
-            "families": ["review"],
-        }
-
-        if will_publish:
-            easy_publish.publish_version(project_name,
-                                        asset_name,
-                                        task_name,
-                                        family_name,
-                                        subset_name,
-                                        representations,
-                                        publish_data,
-                                        batch_name,)
-
+            log.warn(f">>> Fuzzy fail. Will not publish '{item_path}'")
     # TODO: clean up staging directory
 
 
@@ -331,24 +334,28 @@ def _load_data(spreadsheet, named_range):
     return df
 
 
-def _fuzz_asset(item, assets_dict):
-    # Find asset in assets that best matches item
+def _fuzz_asset(item, assets_dict, score_cutoff=80):
+    # Find asset in assets_dict that best matches item
     from fuzzywuzzy import fuzz
     from fuzzywuzzy import process
     from collections import Counter
 
     asset_names = assets_dict.keys()
-    best_match1, s1 = process.extractOne(str(item), asset_names, scorer=fuzz.token_sort_ratio)
-    best_match2, s2 = process.extractOne(str(item), asset_names, scorer=fuzz.token_set_ratio)
-    best_match3, s3 = process.extractOne(str(item), asset_names, scorer=fuzz.partial_ratio)
-    best_match4, s4 = process.extractOne(str(item), asset_names, scorer=fuzz.ratio)
+    best_match1 = process.extractOne(str(item), asset_names, scorer=fuzz.token_sort_ratio, score_cutoff=score_cutoff)
+    best_match2 = process.extractOne(str(item), asset_names, scorer=fuzz.token_set_ratio, score_cutoff=score_cutoff)
+    best_match3 = process.extractOne(str(item), asset_names, scorer=fuzz.partial_ratio, score_cutoff=score_cutoff)
+    best_match4 = process.extractOne(str(item), asset_names, scorer=fuzz.ratio, score_cutoff=score_cutoff)
 
     c = Counter([best_match1, best_match2, best_match3, best_match4, ])
     best_match, _ = c.most_common()[0]
 
-    asset = assets_dict.get(best_match)
-    log.info(f">>> Matched {item} to {asset['name']}")
-    return asset
+    if best_match:
+        asset = assets_dict.get(best_match[0])
+        log.info(f">>> Matched '{item}' to {asset['name']}")
+        return asset
+    else:
+        log.warn(f">>> No good matches for '{item}'")
+        return None
 
 
 def _find_sources(source_directory, formats_list):
