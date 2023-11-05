@@ -140,7 +140,7 @@ def gobble(project_name, input_dir, matching_mode):
 
             if 'psd' in list(representations.keys()) and 'background' in item_path.casefold():
                 # file is psd, so backgound
-                family_name = "render"
+                family_name = "image"
                 task_name = "Edit"
                 subset_name = "background"
                 will_publish = True
