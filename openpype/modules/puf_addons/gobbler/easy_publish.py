@@ -20,7 +20,9 @@ REVIEW_FAMILIES = {
 }
 
 PUBLISH_TO_SG_FAMILIES = {
-    "render"
+    "render",
+    "image",
+    "plate",
 }
 
 
