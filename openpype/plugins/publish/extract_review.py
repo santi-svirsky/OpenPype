@@ -93,7 +93,14 @@ class ExtractReview(pyblish.api.InstancePlugin):
                 instance.data["representations"].remove(repre)
 
     def _get_outputs_for_instance(self, instance):
+        self.log.debug(">>>>>{}<<<<<".format(instance.context))
+
+        self.log.debug(">>>>>{}<<<<<".format(instance.context.data))
         host_name = instance.context.data["hostName"]
+
+        #VVVVVV
+        if host_name == "None": host_name = ""  # HACK: intercepting 'None' and replacing with empty string. see PIPE-1725 ''
+        #^^^^^^
         family = self.main_family_from_instance(instance)
 
         self.log.debug("Host: \"{}\"".format(host_name))
