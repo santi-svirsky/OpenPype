@@ -108,7 +108,7 @@ def gobble(project_name, input_dir, matching_mode):
         items_to_publish = _find_sources(directory, KNOWN_FORMATS)
 
     elif matching_mode == 'unstructured':
-        items_to_publish = _find_sources_2(directory, KNOWN_FORMATS)
+        items_to_publish = _find_sources_mp4(directory, KNOWN_FORMATS)
 
 
     log.info(f"Found {len(items_to_publish)} items to publish")
@@ -140,9 +140,9 @@ def gobble(project_name, input_dir, matching_mode):
 
             if 'psd' in list(representations.keys()) and 'background' in item_path.casefold():
                 # file is psd, so backgound
-                family_name = "image"
-                task_name = "Edit"
-                subset_name = "background"
+                family_name = "render"
+                task_name = "Background"
+                subset_name = os.path.splitext(os.path.basename(item_path))[0]
                 will_publish = True
 
             elif 'png' in list(representations.keys()) and 'render' in item_path.casefold():
@@ -408,7 +408,7 @@ def _find_sources(source_directory, formats_list):
 
 
 
-def _find_sources_2(source_directory, formats_list):
+def _find_sources_mp4(source_directory, formats_list):
     # find only mp4 files
 
     log.info(f"Looking in {source_directory} for mp4 files to publish")
