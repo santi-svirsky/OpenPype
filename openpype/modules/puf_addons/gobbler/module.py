@@ -19,12 +19,6 @@ from openpype.hosts.traypublisher.api import TrayPublisherHost
 from openpype.pipeline import install_host
 from openpype.lib import Logger
 
-# google spreadsheet
-from googleapiclient.discovery import build
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials # this is deprecated
-# from google.auth.credentials import Credentials # but using the new one requires refactoring so not using it for now
 
 import pandas
 import pprint
@@ -202,6 +196,14 @@ def collect_input(named_range, directory, spreadsheet):
     '''Collects input from named_range to cse/in/YYMMDD_uuid directory'''
     import uuid
     from datetime import datetime
+
+    # google spreadsheet
+    from googleapiclient.discovery import build
+    from google_auth_oauthlib.flow import InstalledAppFlow
+    from google.auth.transport.requests import Request
+    from google.oauth2.credentials import Credentials # this is deprecated
+    # from google.auth.credentials import Credentials # but using the new one requires refactoring so not using it for now
+
 
     # Get the current date
     current_date = datetime.now()
