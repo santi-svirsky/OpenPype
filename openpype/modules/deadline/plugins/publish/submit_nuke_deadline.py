@@ -386,9 +386,9 @@ class NukeSubmitDeadline(pyblish.api.InstancePlugin,
         })
 
         plugin = payload["JobInfo"]["Plugin"]
-        self.log.debug("using render plugin : {}".format(plugin))
+        # self.log.debug("using render plugin : {}".format(plugin))
 
-        self.log.debug("Submitting..")
+        # self.log.debug("Submitting..")
         self.log.debug(json.dumps(payload, indent=4, sort_keys=True))
 
         # adding expectied files to instance.data

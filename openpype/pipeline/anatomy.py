@@ -1330,7 +1330,7 @@ class Roots:
         for root_name, _root in roots.items():
             success, result = self.find_root_template_from_path(path, _root)
             if success:
-                log.info("Found match in root \"{}\".".format(root_name))
+                # log.info("Found match in root \"{}\".".format(root_name))
                 return success, result
 
         log.warning("No matching root was found in current setting.")
