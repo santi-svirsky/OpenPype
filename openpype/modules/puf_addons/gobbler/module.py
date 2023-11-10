@@ -137,6 +137,10 @@ def gobble(project_name, input_dir, matching_mode):
                 family_name = "render"
                 task_name = "Background"
                 subset_name = os.path.splitext(os.path.basename(item_path))[0]
+
+                # get rid of png representation if found - workaround. see PIPE-1725
+                representations.pop(['png'], None)
+
                 will_publish = True
 
             elif 'png' in list(representations.keys()) and 'render' in item_path.casefold():
