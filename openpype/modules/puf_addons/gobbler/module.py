@@ -139,7 +139,7 @@ def gobble(project_name, input_dir, matching_mode):
                 subset_name = os.path.splitext(os.path.basename(item_path))[0]
 
                 # get rid of png representation if found - workaround. see PIPE-1725
-                representations.pop(['png'], None)
+                representations.pop('png', None)
 
                 will_publish = True
 
