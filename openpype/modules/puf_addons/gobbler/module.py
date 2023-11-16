@@ -471,6 +471,10 @@ def _copy_input_to_staging(source_directory):
         # Copy the source directory and its contents to the destination
         log.info(f"Copying {source_directory} to staging: {destination_directory}")
         shutil.copytree(source_directory, destination_directory)
+        try:
+            shutil.copytree(source_directory, destination_directory)
+        except Exception as e:
+            log.error(f"Error: {e}")
         log.info(f"Successfully copied from {source_directory} to {destination_directory} for staging")
         return destination_directory
     except shutil.Error as e:
