@@ -470,7 +470,7 @@ def _copy_input_to_staging(source_directory):
     try:
         # Copy the source directory and its contents to the destination
         log.info(f"Copying {source_directory} to staging: {destination_directory}")
-        shutil.copytree(source_directory, destination_directory)
+        # shutil.copytree(source_directory, destination_directory)
         try:
             shutil.copytree(source_directory, destination_directory)
         except Exception as e:
