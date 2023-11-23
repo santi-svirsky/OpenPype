@@ -49,7 +49,7 @@ def main(*subprocess_args):
     launcher = ProcessLauncher(subprocess_args)
     launcher.start()
 
-    if os.environ.get("HEADLESS_PUBLISH"):
+    if cast_to_bool(os.environ.get("HEADLESS_PUBLISH")):
         manager = ModulesManager()
         webpublisher_addon = manager["webpublisher"]
 
@@ -62,7 +62,7 @@ def main(*subprocess_args):
             )
         )
 
-    elif os.environ.get("AVALON_PHOTOSHOP_WORKFILES_ON_LAUNCH", True):
+    elif cast_to_bool(os.environ.get("AVALON_PHOTOSHOP_WORKFILES_ON_LAUNCH", True)):
         save = False
         if os.getenv("WORKFILES_SAVE_AS"):
             save = True
@@ -71,7 +71,46 @@ def main(*subprocess_args):
             lambda: host_tools.show_tool_by_name("workfiles", save=save)
         )
 
+    elif cast_to_bool(os.environ.get("HS_FORCE_REPLACE_PLACEHOLDERS")):
+        log.info("Force replace placeholders")
+
+        from openpype.hosts.aftereffects.api.workfile_template_builder import \
+            build_workfile_template
+        partial_method = functools.partial(build_workfile_template)
+
+        launcher.execute_in_main_thread(partial_method)
+        # log.info(launcher.is_host_connected)
+
     sys.exit(app.exec_())
+
+
+def cast_to_bool(val):
+    """checks if the string value means a stringified boolean,
+    or was missing when stringified.
+
+    Useful when dealing with environment variables values because
+    python will always cast a string thats not "" to True.
+
+    env = {
+        "an_int": 0,
+        "a_bool": False,
+    }
+
+    os.environ.update(env)
+
+    print(bool(os.environ.get("an_int")))
+    > True
+    print(bool(os.environ.get("a_none")))
+    > True
+    bool(os.environ.get("a_bool")) == True
+
+    Args:
+        string (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    return str(val).lower() not in ["none", "false", "0"]
 
 
 def show_tool_by_name(tool_name):
