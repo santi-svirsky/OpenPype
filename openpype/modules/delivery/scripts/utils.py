@@ -20,7 +20,7 @@ logger = Logger.get_logger(__name__)
 
 # rewritten to remove leading _ or . requirement to catch patterns like marshall0001.png
 # RE_FRAME_NUMBER = re.compile("(?P<prefix>.*?)(?P<frame>\d+)\.(?P<extension>\w+\.?(?:sc|gz)?)$")
-RE_FRAME_NUMBER = re.compile(r"(?P<prefix>.*?)(?P<frame>\d+)\.(?P<extension>\w+\.?(?:sc|gz)?)$")
+RE_FRAME_NUMBER = re.compile(r"(?P<prefix>.*?)(?P<frame>\d{4})\.(?P<extension>\w+\.?(?:sc|gz)?)$")
 
 # previous RE:   r"(?P<prefix>^(.*)+)\.(?P<frame>\d+)\.(?P<extension>\w+\.?(sc|gz)?$)"
 
@@ -189,7 +189,6 @@ def get_representations(
         representations.append(rep)
 
         solve_families(instance_data, add_review)
-    print(8)
 
     return representations
 

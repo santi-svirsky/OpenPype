@@ -108,9 +108,9 @@ def payload_submit(
     )
 
     plugin = payload["JobInfo"]["Plugin"]
-    logger.info("using render plugin : {}".format(plugin))
+    # logger.info("using render plugin : {}".format(plugin))
 
-    logger.info("Submitting..")
+    # logger.info("Submitting..")
 
     url = "{}/api/jobs".format(constants.DEADLINE_URL)
     response = requests.post(url, json=payload, timeout=10)
