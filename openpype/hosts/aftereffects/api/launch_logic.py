@@ -71,17 +71,29 @@ def main(*subprocess_args):
             lambda: host_tools.show_tool_by_name("workfiles", save=save)
         )
 
-    elif cast_to_bool(os.environ.get("HS_FORCE_REPLACE_PLACEHOLDERS")):
-        log.info("Force replace placeholders")
-
-        from openpype.hosts.aftereffects.api.workfile_template_builder import \
-            build_workfile_template
-        partial_method = functools.partial(build_workfile_template)
-
-        launcher.execute_in_main_thread(partial_method)
-        # log.info(launcher.is_host_connected)
+    elif cast_to_bool(os.environ.get("HS_FORCE_REBASE")):
+        log.info("Force AEP rebase")
+        launcher.execute_in_main_thread(force_rebase)
 
     sys.exit(app.exec_())
+
+
+def force_rebase():
+    # Rebuild the Workfile according to the template.
+    from openpype.hosts.aftereffects.api.workfile_template_builder import \
+        build_workfile_template, get_comp_by_name
+    log.info("Building Workfile from Template.")
+    build_workfile_template()
+
+    # Update Comp with correct settings
+    log.info("Updating renderCompositingMain with context settings.")
+    frames = True
+    resolution = True
+    comp_ids = [get_comp_by_name('renderCompositingMain').id]
+    set_settings(frames, resolution, comp_ids)
+
+    stub = get_stub()
+    stub.save()
 
 
 def cast_to_bool(val):

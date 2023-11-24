@@ -103,7 +103,7 @@ def submit(project, asset, task):
     env.update(app_env)
     env.update({
         # "OPENPYPE_WEBSERVER_URL": "http://localhost:8079"
-        "HS_FORCE_REPLACE_PLACEHOLDERS": "1",
+        "HS_FORCE_REBASE": "1",
         "AVALON_AFTEREFFECTS_WORKFILES_ON_LAUNCH": "0",
         "AVALON_PHOTOSHOP_WORKFILES_ON_LAUNCH": "0"
     })
