@@ -27,7 +27,7 @@ from openpype.modules.kitsu.utils import credentials
 log = Logger.get_logger("Delivery")
 
 
-OP_HOME = "X:/sombrero/jobs/_openpype" if platform.system() == 'Windows' else "/sombrero/jobs/_openpype"
+OP_ROOT = "X:/sombrero/jobs/_openpype" if platform.system() == 'Windows' else "/sombrero/jobs/_openpype"
 
 class DeliveryModule(OpenPypeModule):
     label = "Delivery module to submit Kitsu Playlists using a template"
@@ -165,9 +165,9 @@ def _submit(playlist_url):
                     OP_DELIVERY_TEMPLATE_OUT = os.path.join('{root[work]}', context["project_name"], "delivery", playlist_name, context['asset_name'], seq.format(template='{basename}mov'))
 
                     # TODO take care of {root[work]} and window slashes
-                    OP_DELIVERY_TEMPLATE_IN = OP_DELIVERY_TEMPLATE_IN.replace("{root[work]}", OP_HOME)
+                    OP_DELIVERY_TEMPLATE_IN = OP_DELIVERY_TEMPLATE_IN.replace("{root[work]}", OP_ROOT)
                     OP_DELIVERY_TEMPLATE_IN = OP_DELIVERY_TEMPLATE_IN.replace("\\", "/")
-                    OP_DELIVERY_TEMPLATE_OUT = OP_DELIVERY_TEMPLATE_OUT.replace("{root[work]}", OP_HOME)
+                    OP_DELIVERY_TEMPLATE_OUT = OP_DELIVERY_TEMPLATE_OUT.replace("{root[work]}", OP_ROOT)
                     OP_DELIVERY_TEMPLATE_OUT = OP_DELIVERY_TEMPLATE_OUT.replace("\\", "/")
 
                     OP_DELIVERY_TEMPLATE_FRAME_IN = seq.start()
@@ -176,8 +176,8 @@ def _submit(playlist_url):
                     plugin_data = {
                         "AWSAssetFile0": OP_DELIVERY_TEMPLATE_OUT,
                         "OutputFilePath": os.path.dirname(OP_DELIVERY_TEMPLATE_OUT),
-                        "ProjectPath": "{}/templates/delivery.nk".format(OP_HOME),
-                        "SceneFile": "{}/templates/delivery.nk".format(OP_HOME),
+                        "ProjectPath": "{}/templates/delivery.nk".format(OP_ROOT),
+                        "SceneFile": "{}/templates/delivery.nk".format(OP_ROOT),
                         "UseGpu": True,
                         "Version": 13.2,
                         "WriteNode": "Write1",
