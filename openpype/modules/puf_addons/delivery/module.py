@@ -17,8 +17,11 @@ from openpype.pipeline.context_tools import change_current_context
 from . import easy_publish
 
 from openpype.hosts.traypublisher.api import TrayPublisherHost
-from openpype.pipeline import install_host
-from openpype.lib import Logger
+from openpype.pipeline import Anatomy, get_current_project_name, install_host
+from openpype.pipeline.anatomy import AnatomyTemplates
+from openpype.pipeline.template_data import get_template_data_with_names
+
+from openpype.lib import Logger, StringTemplate
 from openpype.modules.deadline.lib import submit as deadline_submit
 from openpype.modules.deadline import constants as dl_constants
 
@@ -159,47 +162,44 @@ def _submit(playlist_url):
                     log.info("representation not found")
 
                 if path_to_frames:
+                    project_name = context["project_name"]
+                    asset_name = context["asset_name"]
+                    task_name = task["task_type"]["name"]
+                    host_name = None
+                    data = get_template_data_with_names(project_name, asset_name, task_name, host_name)
+
+                    anatomy = Anatomy(project_name)
+                    data["root"] = anatomy.roots
+                    data["package_name"] = playlist_name
+                    data["ext"] = 'mov'
+                    data["version"] = representation_version_number
+                    solved_anatomy = AnatomyTemplates.solve_template_inner_links(anatomy["templates"])
+                    delivery_path_template = solved_anatomy['delivery']["path"]
+
                     seq = fileseq.findSequencesInList(path_to_frames)[0]
                     OP_DELIVERY_TEMPLATE_IN = seq.format(template='{dirname}{basename}####{extension}')
+                    OP_DELIVERY_TEMPLATE_IN = StringTemplate.format_strict_template(OP_DELIVERY_TEMPLATE_IN, data)
                     OP_DELIVERY_TEMPLATE_IN = os.path.normpath(OP_DELIVERY_TEMPLATE_IN)
-                    OP_DELIVERY_TEMPLATE_OUT = os.path.join('{root[work]}', context["project_name"], "delivery", playlist_name, context['asset_name'], seq.format(template='{basename}mov'))
 
-                    # TODO take care of {root[work]} and window slashes
-                    OP_DELIVERY_TEMPLATE_IN = OP_DELIVERY_TEMPLATE_IN.replace("{root[work]}", OP_ROOT)
-                    OP_DELIVERY_TEMPLATE_IN = OP_DELIVERY_TEMPLATE_IN.replace("\\", "/")
-                    OP_DELIVERY_TEMPLATE_OUT = OP_DELIVERY_TEMPLATE_OUT.replace("{root[work]}", OP_ROOT)
-                    OP_DELIVERY_TEMPLATE_OUT = OP_DELIVERY_TEMPLATE_OUT.replace("\\", "/")
+                    OP_DELIVERY_TEMPLATE_OUT = StringTemplate.format_strict_template(delivery_path_template, data)
+                    OP_DELIVERY_TEMPLATE_OUT = os.path.normpath(OP_DELIVERY_TEMPLATE_OUT)
 
                     OP_DELIVERY_TEMPLATE_FRAME_IN = seq.start()
                     OP_DELIVERY_TEMPLATE_FRAME_OUT = seq.end()
 
+                    template = StringTemplate.format_strict_template(r"{root[work]}/templates/delivery.nk", data)
+                    template = os.path.normpath(template)
                     plugin_data = {
                         "AWSAssetFile0": OP_DELIVERY_TEMPLATE_OUT,
                         "OutputFilePath": os.path.dirname(OP_DELIVERY_TEMPLATE_OUT),
-                        "ProjectPath": "{}/templates/delivery.nk".format(OP_ROOT),
-                        "SceneFile": "{}/templates/delivery.nk".format(OP_ROOT),
+                        "ProjectPath": template,
+                        "SceneFile": template,
                         "UseGpu": True,
                         "Version": 13.2,
                         "WriteNode": "Write1",
                     }
 
                     extra_env = {
-                        "AVALON_PROJECT": context["project_name"],
-                        "AVALON_TASK": context["task_name"],
-                        "AVALON_ASSET": context["asset_name"],
-                        "AVALON_WORKDIR": os.path.dirname(OP_DELIVERY_TEMPLATE_OUT),
-                        "AVALON_APP_NAME": "nuke/13-2",
-                        "AVALON_DB": "avalon",
-                        "AVALON_APP": "nuke",
-                        "AVALON_TIMEOUT": "1000",
-                        "schema": "openpype:session-3.0",
-                        "OPENPYPE_MONGO": "mongodb://root:example@10.68.150.36:27017",
-                        "OPENPYPE_LOG_TO_SERVER": "1",
-                        "OPENPYPE_RENDER_JOB": "1",
-                        "OPENPYPE_STATICS_SERVER": "http://localhost:8079/res",
-                        "OPENPYPE_WORKFILE_TOOL_ON_START": "0",
-                        "OPENPYPE_DATABASE_NAME": "openpype",
-                        "OPENPYPE_WEBSERVER_URL": "http://localhost:8079",
                         "OP_DELIVERY_TEMPLATE_IN": OP_DELIVERY_TEMPLATE_IN,
                         "OP_DELIVERY_TEMPLATE_OUT": OP_DELIVERY_TEMPLATE_OUT,
                         "OP_DELIVERY_TEMPLATE_FRAME_IN": OP_DELIVERY_TEMPLATE_FRAME_IN,
@@ -207,7 +207,9 @@ def _submit(playlist_url):
                     }
 
                     # log.info("#"*50)
-                    log.info(OP_DELIVERY_TEMPLATE_IN)
+                    log.info("IN: {}".format(OP_DELIVERY_TEMPLATE_IN))
+                    log.info("OUT: {}".format(OP_DELIVERY_TEMPLATE_OUT))
+                    log.info("Template: {}".format(template))
                     response = deadline_submit.payload_submit(
                         plugin="Nuke",
                         plugin_data=plugin_data,
