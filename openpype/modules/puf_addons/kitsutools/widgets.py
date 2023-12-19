@@ -20,6 +20,8 @@ class MyKitsuToolsDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super(MyKitsuToolsDialog, self).__init__(parent)
 
+        log.info("MyKitsuToolsDialog sort playlist")
+
         self.auth()
 
         self.ui = uic.loadUi(
@@ -91,7 +93,9 @@ class MyKitsuToolsDialog(QtWidgets.QDialog):
         status = gazu.playlist.update_playlist(payload)
 
         messageBox = QtWidgets.QMessageBox()
-        messageBox.information(self, "Playlist updated", "Updated playlist {}".format(status["name"]))
+        messageBox.information(
+            self, "Playlist updated", "Updated playlist {}".format(status["name"])
+        )
 
     def auth(self):
         user, password = credentials.load_credentials()
@@ -105,8 +109,11 @@ class MyKitsuToolsDialog(QtWidgets.QDialog):
 
     def fetchPlaylist(self):
         playlist_url = self.ui.playlistUrlLineEdit.text()
-        playlist_url = "http://10.68.150.36/productions/be776537-51b0-433a-ae81-0b0890f85b7e/episodes/84954cf9-6091-4baf-bce0-28c64d008640/playlists/885720e5-7c9b-49b1-82b3-31c4de584508"
+        # playlist_url = "http://10.68.150.36/productions/be776537-51b0-433a-ae81-0b0890f85b7e/episodes/84954cf9-6091-4baf-bce0-28c64d008640/playlists/885720e5-7c9b-49b1-82b3-31c4de584508"
+
         if not playlist_url:
+            msgBox = QtWidgets.QMessageBox()
+            msgBox.critical(self, "Add a URL", "Missing URL")
             return
 
         # URL has the playlist id that we need to locate the playlist
@@ -116,7 +123,7 @@ class MyKitsuToolsDialog(QtWidgets.QDialog):
         playlist_id = None
         if len(results.groups()) > 0:
             playlist_id = results.group(1)
-            log.info(f"Playlist ID: {playlist_id}")
+            log.info(f"Fetching Playlist ID: {playlist_id}")
 
             playlist = gazu.playlist.get_playlist(playlist_id)
 
@@ -132,12 +139,17 @@ class MyKitsuToolsDialog(QtWidgets.QDialog):
 
             for index, shot in enumerate(shots):
                 entity = gazu.entity.get_entity(shot["entity_id"])
+                log.info("Loading shot {} information...".format(shot["entity_id"]))
                 preview_file = gazu.files.get_preview_file(shot["preview_file_id"])
+                log.info(
+                    "Loading preview_file {} information...".format(
+                        shot["preview_file_id"]
+                    )
+                )
                 task = gazu.task.get_task(preview_file["task_id"])
-
-                # pprint.pprint(entity)
-                # pprint.pprint(preview_file)
-                # pprint.pprint(task)
+                log.info(
+                    "Loading task {} information...".format(preview_file["task_id"])
+                )
 
                 row_index = self.ui.tableWidget.rowCount()
                 self.ui.tableWidget.insertRow(row_index)
@@ -145,7 +157,6 @@ class MyKitsuToolsDialog(QtWidgets.QDialog):
                 # Column 0: Order
                 # We need this column to be ordered by index
                 # instead of an alphanumeric sorting.
-                #
                 widget = QtWidgets.QTableWidgetItem()
                 widget.setData(QtCore.Qt.DisplayRole, index * 10)
                 self.ui.tableWidget.setItem(row_index, 0, widget)
@@ -179,17 +190,16 @@ class MyKitsuToolsDialog(QtWidgets.QDialog):
                     row_index, 3, QtWidgets.QTableWidgetItem(task_name)
                 )
 
-                revision = preview_file["revision"]
                 self.ui.tableWidget.setItem(
-                    row_index, 4, QtWidgets.QTableWidgetItem(str(revision))
+                    row_index,
+                    4,
+                    QtWidgets.QTableWidgetItem(str(preview_file["revision"])),
                 )
 
-                revision = preview_file["revision"]
                 self.ui.tableWidget.setItem(
                     row_index, 5, QtWidgets.QTableWidgetItem(str(entity["id"]))
                 )
 
-                revision = preview_file["revision"]
                 self.ui.tableWidget.setItem(
                     row_index, 6, QtWidgets.QTableWidgetItem(str(preview_file["id"]))
                 )
