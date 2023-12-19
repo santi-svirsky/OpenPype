@@ -65,6 +65,7 @@ class MyKitsuToolsDialog(QtWidgets.QDialog):
 
     def onClickPlaylistFetch(self):
         self.playlist = self.fetchPlaylist()
+        self.clearTable()
         self.updateTable()
 
     def onClickPlaylistUpdate(self):
@@ -131,11 +132,14 @@ class MyKitsuToolsDialog(QtWidgets.QDialog):
 
     def updateTable(self):
         """ """
+        if not self.playlist:
+            return
 
         entity_type = self.playlist["for_entity"]
 
         if entity_type == "shot":
             shots = self.playlist["shots"]
+            log.info("Found {} shots".format(len(shots)))
 
             for index, shot in enumerate(shots):
                 entity = gazu.entity.get_entity(shot["entity_id"])
@@ -208,3 +212,6 @@ class MyKitsuToolsDialog(QtWidgets.QDialog):
 
         else:
             log.info("Only processing playlist of shots")
+
+    def clearTable(self):
+        self.ui.tableWidget.setRowCount(0)
