@@ -37,6 +37,9 @@ class MyKitsuToolsDialog(QtWidgets.QDialog):
         # self.ui.playlistUrlLineEdit
         self.ui.updatePlaylistButton.clicked.connect(self.onClickPlaylistUpdate)
 
+        self.ui.tableWidget.setSortingEnabled(True)
+        self.ui.tableWidget.sortItems(0, QtCore.Qt.AscendingOrder)
+
         # Get the horizontal header
         header = self.ui.tableWidget.horizontalHeader()
 
@@ -45,11 +48,11 @@ class MyKitsuToolsDialog(QtWidgets.QDialog):
         header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeToContents)
         header.setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
         header.setSectionResizeMode(3, QtWidgets.QHeaderView.Fixed)
+        header.setSectionResizeMode(4, QtWidgets.QHeaderView.Fixed)
+        header.setSectionResizeMode(5, QtWidgets.QHeaderView.Fixed)
 
         # You can also set the width for the Fixed and Interactive modes
         # header.resizeSection(3, 100)
-
-        vheader = self.ui.tableWidget.verticalHeader()
 
         self.playlist = None
 
@@ -71,29 +74,24 @@ class MyKitsuToolsDialog(QtWidgets.QDialog):
                 "preview_file_id": self.ui.tableWidget.item(row_index, 6).text(),
             }
             shots.append(shot)
-            # self.ui.tableWidget
 
-        pprint.pprint(shots)
-
-        shots = sorted(shot, key=lambda obj: obj["order"])
-
-        pprint.pprint(shots)
-
+        shots = sorted(shots, key=lambda obj: int(obj["order"]))
 
         payload = {
             "id": self.playlist["id"],
             "shots": [
                 {
-                    "entity_id": "8826b3f6-64d1-42ba-afe9-f84ae60aade2",
-                    "preview_file_id": "5b9ca1f7-c3c6-404a-bbad-41fb90e8ff27",
-                },
-                {
-                    "entity_id": "79b41a73-9a6f-425c-a0df-f082c6d7d0de",
-                    "preview_file_id": "0245ac01-242a-473a-95c5-abd679f5f2bf",
-                },
+                    "entity_id": shot["entity_id"],
+                    "preview_file_id": shot["preview_file_id"],
+                }
+                for shot in shots
             ],
         }
-        # gazu.playlist.update_playlist(payload)
+
+        status = gazu.playlist.update_playlist(payload)
+
+        messageBox = QtWidgets.QMessageBox()
+        messageBox.information(self, "Playlist updated", "Updated playlist {}".format(status["name"]))
 
     def auth(self):
         user, password = credentials.load_credentials()
@@ -139,16 +137,20 @@ class MyKitsuToolsDialog(QtWidgets.QDialog):
 
                 # pprint.pprint(entity)
                 # pprint.pprint(preview_file)
-                pprint.pprint(task)
+                # pprint.pprint(task)
 
                 row_index = self.ui.tableWidget.rowCount()
                 self.ui.tableWidget.insertRow(row_index)
 
-                # Order
-                self.ui.tableWidget.setItem(
-                    row_index, 0, QtWidgets.QTableWidgetItem(str(index))
-                )
+                # Column 0: Order
+                # We need this column to be ordered by index
+                # instead of an alphanumeric sorting.
+                #
+                widget = QtWidgets.QTableWidgetItem()
+                widget.setData(QtCore.Qt.DisplayRole, index * 10)
+                self.ui.tableWidget.setItem(row_index, 0, widget)
 
+                # Column 1: Display a bitmap image using QLabel
                 preview_file_temp = os.path.join(
                     self.temp_dir, "{}.png".format(preview_file["id"])
                 )
@@ -156,7 +158,6 @@ class MyKitsuToolsDialog(QtWidgets.QDialog):
                     gazu.files.download_preview_file_thumbnail(
                         preview_file, preview_file_temp
                     )
-                # Column 1: Display a bitmap image using QLabel
                 image = QtGui.QPixmap(preview_file_temp)
                 label_bitmap = QtWidgets.QLabel()
                 label_bitmap.setPixmap(image)
@@ -197,6 +198,3 @@ class MyKitsuToolsDialog(QtWidgets.QDialog):
 
         else:
             log.info("Only processing playlist of shots")
-
-    # def _on_ok_clicked(self):
-    #     self.done(1)

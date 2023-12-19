@@ -4,10 +4,10 @@ If addon class or settings definition won't be here their definition won't
 be found by OpenPype discovery.
 """
 
-from .delivery import (
-    DeliveryModule
-)
+# from .delivery import (
+#     DeliveryModule
+# )
 
-__all__ = (
-    "DeliveryModule"
-)
+# __all__ = (
+#     "DeliveryModule"
+# )
