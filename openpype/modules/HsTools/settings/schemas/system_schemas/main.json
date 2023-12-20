@@ -1,7 +1,7 @@
 {
     "type": "dict",
-    "key": "KitsuTools_addon",
-    "label": "KitsuTools addon",
+    "key": "HsTools_addon",
+    "label": "HsTools addon",
     "collapsible": true,
     "checkbox_key": "enabled",
     "children": [

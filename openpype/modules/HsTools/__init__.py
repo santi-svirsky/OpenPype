@@ -4,17 +4,17 @@ If addon class or settings definition won't be here their definition won't
 be found by OpenPype discovery.
 """
 
-# from .module import KitsuToolsModule
+# from .module import HsToolsModule
 
-# __all__ = ("KitsuToolsModule",)
+# __all__ = ("HsToolsModule",)
 
 
 from .addon import (
-    AddonSettingsDef,
-    KitsuToolsAddon
+    HsToolsAddonSettingsDef,
+    HsToolsAddon
 )
 
 __all__ = (
-    "AddonSettingsDef",
-    "KitsuToolsAddon"
+    "HsToolsAddonSettingsDef",
+    "HsToolsAddon"
 )

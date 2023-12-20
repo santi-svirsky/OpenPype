@@ -19,14 +19,14 @@ from openpype.hosts.traypublisher.api import TrayPublisherHost
 from openpype.pipeline import install_host
 from openpype.lib import Logger
 
-from openpype.modules.kitsu.utils import credentials
+from openpype.modules.HsTools.utils import credentials
 
-log = Logger.get_logger("kitsutools")
+log = Logger.get_logger("HsTools")
 
 
-class KitsuToolsModule(OpenPypeModule):
-    label = "Tools for Kitsu"
-    name = "kitsutools"
+class HsToolsModule(OpenPypeModule):
+    label = "Tools for HsTools"
+    name = "HsTools"
 
     def initialize(self, modules_settings):
         self.enabled = True
@@ -42,7 +42,7 @@ class KitsuToolsModule(OpenPypeModule):
         return {}
 
 
-@click.group(KitsuToolsModule.name, help="Ingest mess from client.")
+@click.group(HsToolsModule.name, help="Ingest mess from client.")
 def cli_main():
     pass
 
@@ -147,8 +147,8 @@ def _run(playlist_url):
 
 #             # TODO: This is pretty hacky we are retrieving the
 #             # Avalon Version number from the original name of
-#             # the file uploaded to Kitsu. I couldn't find
-#             # any way to relate Kitsu Preview Files to OP Representations.
+#             # the file uploaded to HsTools. I couldn't find
+#             # any way to relate HsTools Preview Files to OP Representations.
 #             log.info(preview_file["original_name"])
 #             regex_result = version_regex.findall(preview_file["original_name"])
 #             representation_version_number = int(regex_result[0])

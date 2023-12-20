@@ -1,6 +1,6 @@
 {
     "system_settings/modules": {
         "type": "schema",
-        "name": "KitsuTools_addon/main"
+        "name": "HsTools_addon/main"
     }
 }

@@ -1,5 +1,5 @@
 {
-    "modules/KitsuTools_addon": {
+    "modules/HsTools_addon": {
         "enabled": true
     }
 }

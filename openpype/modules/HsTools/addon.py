@@ -22,14 +22,14 @@ from openpype.modules import (
 # Settings definition of this addon using `JsonFilesSettingsDef`
 # - JsonFilesSettingsDef is prepared settings definition using json files
 #   to define settings and store default values
-class AddonSettingsDef(JsonFilesSettingsDef):
+class HsToolsAddonSettingsDef(JsonFilesSettingsDef):
     # This will add prefixes to every schema and template from `schemas`
     #   subfolder.
     # - it is not required to fill the prefix but it is highly
     #   recommended as schemas and templates may have name clashes across
     #   multiple addons
     # - it is also recommended that prefix has addon name in it
-    schema_prefix = "KitsuTools_addon"
+    schema_prefix = "HsTools_addon"
 
     def get_settings_root_path(self):
         """Implemented abstract class of JsonFilesSettingsDef.
@@ -43,16 +43,16 @@ class AddonSettingsDef(JsonFilesSettingsDef):
         )
 
 
-class KitsuToolsAddon(OpenPypeAddOn, IPluginPaths, ITrayAction):
+class HsToolsAddon(OpenPypeAddOn, IPluginPaths, ITrayAction):
     """This Addon has defined its settings and interface.
 
-    This KitsuTools has system settings with an enabled option. And use
+    This HsTools has system settings with an enabled option. And use
     few other interfaces:
     - `IPluginPaths` to define custom plugin paths
     - `ITrayAction` to be shown in tray tool
     """
-    label = "KitsuTools Addon"
-    name = "KitsuTools_addon"
+    label = "HsTools Addon"
+    name = "HsTools_addon"
 
     def initialize(self, settings):
         """Initialization of addon."""
@@ -78,9 +78,9 @@ class KitsuToolsAddon(OpenPypeAddOn, IPluginPaths, ITrayAction):
         if self._dialog is not None:
             return
 
-        from .widgets import MyKitsuToolsDialog
+        from .widgets import MyHsToolsDialog
 
-        self._dialog = MyKitsuToolsDialog()
+        self._dialog = MyHsToolsDialog()
 
     def show_dialog(self):
         """Show dialog with connected modules.
@@ -118,7 +118,7 @@ class KitsuToolsAddon(OpenPypeAddOn, IPluginPaths, ITrayAction):
         click_group.add_command(cli_main)
 
 
-@click.group(KitsuToolsAddon.name, help="KitsuTools addon dynamic cli commands.")
+@click.group(HsToolsAddon.name, help="HsTools addon dynamic cli commands.")
 def cli_main():
     pass
 
@@ -131,7 +131,7 @@ def nothing():
 
 @cli_main.command()
 def show_dialog():
-    """Show KitsuToolsAddon dialog.
+    """Show HsToolsAddon dialog.
 
     We don't have access to addon directly through cli so we have to create
     it again.
@@ -139,6 +139,6 @@ def show_dialog():
     from openpype.tools.utils.lib import qt_app_context
 
     manager = ModulesManager()
-    KitsuTools_addon = manager.modules_by_name[KitsuToolsAddon.name]
+    HsTools_addon = manager.modules_by_name[HsToolsAddon.name]
     with qt_app_context():
-        KitsuTools_addon.show_dialog()
+        HsTools_addon.show_dialog()

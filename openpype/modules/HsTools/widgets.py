@@ -9,26 +9,156 @@ import re
 from openpype.modules.kitsu.utils import credentials
 from openpype.lib import Logger
 
+from openpype.client import get_projects
+
 import tempfile
 
 from copy import deepcopy
 
-log = Logger.get_logger("kitsutools")
+log = Logger.get_logger("MyHsToolsDialog")
+
+from openpype.pipeline import AvalonMongoDB, Anatomy
+from openpype.tools.utils.models import ProjectModel, ProjectSortFilterProxy
+from openpype.lib import StringTemplate
+
+from openpype.modules.puf_addons.gobbler.module import gobble
 
 
-class MyKitsuToolsDialog(QtWidgets.QDialog):
+class MyHsToolsDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
-        super(MyKitsuToolsDialog, self).__init__(parent)
+        super(MyHsToolsDialog, self).__init__(parent)
+        self.setMinimumSize(300, 200)
+        layout = QtWidgets.QVBoxLayout(self)
 
-        log.info("MyKitsuToolsDialog sort playlist")
+        label = QtWidgets.QLabel(self)
+        label.setText("Hs Tools")
+        layout.addWidget(label)
+
+        button = QtWidgets.QPushButton("Open Kitsu Playlist Sort Tool", parent=self)
+        button.clicked.connect(self.onClickOpenKitsuPlaylistSortTool)
+        layout.addWidget(button)
+
+        button = QtWidgets.QPushButton("Open Gobble Tool", parent=self)
+        button.clicked.connect(self.onClickOpenGobble)
+        layout.addWidget(button)
+
+        layout.addStretch()
+
+        self.setLayout(layout)
+        self.setStyleSheet(load_stylesheet())
+
+        self.setAttribute(QtGui.Qt.WA_DeleteOnClose)
+
+    def onClickOpenKitsuPlaylistSortTool(self):
+        dialog = HsToolsPlaylistSortDialog(parent=self)
+        dialog.show()
+
+    def onClickOpenGobble(self):
+        dialog = HsToolsGobbleDialog(parent=self)
+        dialog.show()
+
+
+class HsToolsGobbleDialog(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        super(HsToolsGobbleDialog, self).__init__(parent)
+
+        log.info("HsToolsGobbleDialog")
+
+        # self.auth()
+
+        base_path = os.path.dirname(__file__)
+        ui = os.path.join(base_path, "ui", "HsToolsGobbleDialog.ui")
+        self.ui = uic.loadUi(ui)
+
+        self.setWindowTitle("Gobble")
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(self.ui)
+
+        self.setLayout(layout)
+
+        dbcon = AvalonMongoDB()
+
+        project_combobox = self.ui.comboBox
+        # Styled delegate to propagate stylessheet
+        project_delegate = QtWidgets.QStyledItemDelegate(project_combobox)
+        project_combobox.setItemDelegate(project_delegate)
+        # Project model with only active projects without default item
+        project_model = ProjectModel(dbcon, only_active=True, add_default_project=False)
+        project_model.refresh()
+        # Sorting proxy model
+        project_proxy = ProjectSortFilterProxy()
+        project_proxy.setSourceModel(project_model)
+        project_proxy.sort(0)
+        project_combobox.setModel(project_proxy)
+
+        self._project_model = project_model
+        self._project_proxy = project_proxy
+
+        self.ui.browsePushButton.clicked.connect(self.openFileDialog)
+        self.ui.ingestPushButton.clicked.connect(self.onClickIngestPushButton)
+
+    def get_project_name(self):
+        index = self.ui.comboBox.currentIndex()
+        proxy_index = self._project_proxy.index(index, 0)
+        source_index = self._project_proxy.mapToSource(proxy_index)
+        project = self._project_model.data(source_index)
+
+        return project
+
+    def openFileDialog(self):
+        project = self.get_project_name()
+        anatomy = Anatomy(project)
+        data = {}
+        data["root"] = anatomy.roots
+        data["project"] = {"name": project}
+        template = r"{root[work]}/{project[name]}"
+
+        work_root = StringTemplate.format_strict_template(template, data)
+        work_root = os.path.abspath(work_root)
+
+        fileDialog = QtWidgets.QFileDialog(parent=self, directory=work_root)
+        fileDialog.setFileMode(QtWidgets.QFileDialog.Directory)
+        if fileDialog.exec_():
+            files = fileDialog.selectedFiles()
+            self.ui.lineEdit.setText(files[0])
+
+    def onClickIngestPushButton(self):
+        project_name = self.get_project_name()
+        input_dir = self.ui.lineEdit.text()
+        matching_mode_widget = self.ui.matchingModeButtonGroup.checkedButton()
+        matching_mode = matching_mode_widget.text()
+
+        try:
+            log.info(f"Will glob {project_name}, {input_dir}, {matching_mode}")
+            gobble.callback(project_name, input_dir, matching_mode)
+            msgBox = QtWidgets.QMessageBox()
+            msgBox.information(self, "Gobbling finished", "Gobbling finished")
+
+        except:
+            import traceback
+
+            error_msg = traceback.format_exc()
+            log.error("Error while gobbling")
+            log.error(error_msg)
+
+            msgBox = QtWidgets.QMessageBox()
+            msgBox.critical(self, "Error", "Error occurred while gobbling directory.")
+
+
+class HsToolsPlaylistSortDialog(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        super(HsToolsPlaylistSortDialog, self).__init__(parent)
+
+        log.info("HsToolsPlaylistSortDialog sort playlist")
 
         self.auth()
 
-        self.ui = uic.loadUi(
-            r"X:\vfxboat\OpenPype\openpype\modules\puf_addons\kitsutools\addon.ui"
-        )
+        base_path = os.path.dirname(__file__)
+        ui = os.path.join(base_path, "ui", "HsToolsPlaylistSortDialog.ui")
+        self.ui = uic.loadUi(ui)
 
-        self.setWindowTitle("Connected modules")
+        self.setWindowTitle("Kitsu Playlist sort")
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(self.ui)
@@ -58,10 +188,14 @@ class MyKitsuToolsDialog(QtWidgets.QDialog):
 
         self.playlist = None
 
-        self.temp_dir = os.path.join(tempfile.gettempdir(), "kitsutools_addons")
+        self.temp_dir = os.path.join(
+            tempfile.gettempdir(), "HsToolsPlaylistSort_addons"
+        )
         os.makedirs(self.temp_dir, exist_ok=True)
 
         self.setStyleSheet(load_stylesheet())
+
+        self.setAttribute(QtGui.Qt.WA_DeleteOnClose)
 
     def onClickPlaylistFetch(self):
         self.playlist = self.fetchPlaylist()
@@ -69,6 +203,11 @@ class MyKitsuToolsDialog(QtWidgets.QDialog):
         self.updateTable()
 
     def onClickPlaylistUpdate(self):
+        if not self.playlist:
+            msgBox = QtWidgets.QMessageBox()
+            msgBox.critical(self, "Add a URL", "Missing URL")
+            return
+
         shots = []
         for row_index in range(self.ui.tableWidget.rowCount()):
             shot = {

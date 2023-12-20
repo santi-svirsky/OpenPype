@@ -1,6 +1,6 @@
 {
     "type": "dict",
-    "key": "KitsuTools_addon",
+    "key": "HsTools_addon",
     "label": "Example addon",
     "collapsible": true,
     "children": [
@@ -14,7 +14,7 @@
         },
         {
             "type": "template",
-            "name": "KitsuTools_addon/the_template",
+            "name": "HsTools_addon/the_template",
             "template_data": [
                 {
                     "name": "color_1",
