@@ -103,6 +103,7 @@ def submit(project, asset, task):
     env.update(app_env)
     env.update({
         # "OPENPYPE_WEBSERVER_URL": "http://localhost:8079"
+        "SUPRESS_DIALOG": "1",
         "HS_FORCE_REBASE": "1",
         "AVALON_AFTEREFFECTS_WORKFILES_ON_LAUNCH": "0",
         "AVALON_PHOTOSHOP_WORKFILES_ON_LAUNCH": "0"
@@ -133,49 +134,3 @@ def submit(project, asset, task):
 
     proc = context.launch()
     _print_stdout_until_timeout(proc)
-
-    # start_script = os.path.join(
-    #     os.getenv("OPENPYPE_ROOT"),
-    #     "start.py",
-    # )
-
-    # non_python_host_launch = os.path.join(
-    #     os.getenv("OPENPYPE_ROOT"),
-    #     "openpype",
-    #     "scripts",
-    #     "non_python_host_launch.py",
-    # )
-
-    # cmds = [
-    #     "python",
-    #     start_script,
-    #     "run",
-    #     non_python_host_launch,
-    #     app_executable,
-    #     'X:\\sombrero\\jobs\\DevAE\\Shots\\E01\\SQ01\\SH01\\work\\Animation\\devae_SH01_Animation_v002.aep',
-    #     # 'X:\\sombrero\\jobs\\DevAE\\Shots\\E01\\SQ01\\SH01\\work\\Animation\\devae_SH01_Animation_v002.aep'
-    # ]
-
-    # # log.info(cmds)
-    # # subprocess.Popen(cmds, env=env, creationflags=subprocess.CREATE_NEW_CONSOLE)
-
-
-    # # data.update(dict(
-    # #     app_args=app_args,
-    # #     project_name=project_name,
-    # #     asset_name=asset_name,
-    # #     task_name=task_name,
-    # #     env=env,
-    # #     start_last_workfile=start_last_workfile,
-    # # ))
-    # # context = ApplicationLaunchContext(
-    # #     app, executable, **data
-    # # )
-
-    # # # TODO: Do not hardcode this - we might not always want to capture output
-    # # #  and especially not stderr -> stdout. For now this is used to capture
-    # # #  the output from the subprocess and log the output accordingly
-    # # context.kwargs["stdout"] = subprocess.PIPE
-    # # context.kwargs["stderr"] = subprocess.STDOUT
-
-    # # return context.launch()
