@@ -19,8 +19,13 @@ from openpype.hosts.traypublisher.api import TrayPublisherHost
 from openpype.pipeline import install_host
 from openpype.lib import Logger
 
+import getpass
 
-import pandas
+from openpype.pipeline import legacy_io
+from openpype.modules.deadline import constants as dl_constants
+
+from openpype.modules.deadline.lib import submit
+
 import pprint
 
 log = Logger.get_logger("Gobbler")
@@ -107,6 +112,9 @@ def gobble(project_name, input_dir, matching_mode):
 
     log.info(f"Found {len(items_to_publish)} items to publish")
     # MAIN LOOP
+
+    published_assets = {}
+
     for item in items_to_publish:
         # fuzzy match asset
         item_path = item[0]
@@ -169,7 +177,7 @@ def gobble(project_name, input_dir, matching_mode):
             }
 
             if will_publish:
-                easy_publish.publish_version(project_name,
+                response = easy_publish.publish_version(project_name,
                                             asset_name,
                                             task_name,
                                             family_name,
@@ -177,9 +185,26 @@ def gobble(project_name, input_dir, matching_mode):
                                             representations,
                                             publish_data,
                                             batch_name,)
+                if not published_assets.get(asset_name):
+                    published_assets[asset_name] = {
+                        "batch_name": batch_name,
+                        "response_data": [response],
+                    }
+                else:
+                    published_assets[asset_name]["response_data"].append(response)
 
         else:
             log.warn(f">>> Fuzzy fail. Will not publish '{item_path}'")
+
+    for key, value in published_assets.items():
+        submit_rebase_ae_workfile_job(
+            project_name=project_name,
+            task_name="Compositing",
+            asset_name=key,
+            batch_name=value["batch_name"],
+            response_data=value["response_data"],
+        )
+
     # TODO: clean up staging directory
 
 
@@ -333,7 +358,7 @@ def _load_data(spreadsheet, named_range):
 
     column_names = all_lines[0]
     data = all_lines[1:]
-
+    import pandas
     # Create a DataFrame from the list of rows and specify column names
     df = pandas.DataFrame(data, columns=column_names)
 
@@ -485,3 +510,77 @@ def _copy_input_to_staging(source_directory):
     except Exception as e:
         raise(e)
         # log.info(f"An error occurred: {e}")
+
+
+def submit_rebase_ae_workfile_job(
+    project_name, task_name, asset_name, batch_name, response_data
+):
+    publish_args = [
+        "module ",
+        "rebase",
+        "submit",
+        "--project",
+        project_name,
+        "--task",
+        task_name,
+        "--asset",
+        asset_name,
+    ]
+
+    from openpype.pipeline import Anatomy
+    from openpype.pipeline.anatomy import AnatomyTemplates
+    from openpype.lib import StringTemplate
+    from openpype.pipeline.template_data import get_template_data_with_names
+
+    anatomy = Anatomy(project_name)
+    work_folder = anatomy.templates["work"]["folder"]
+    data = get_template_data_with_names(project_name, asset_name, task_name)
+    data["root"] = anatomy.roots
+
+    work_root = StringTemplate.format_strict_template(work_folder, data)
+
+    # Create dictionary of data specific to OP plugin for payload submit
+    plugin_data = {
+        "Arguments": " ".join(publish_args),
+        "Version": os.getenv("OPENPYPE_VERSION"),
+        "SingleFrameOnly": "True",
+    }
+
+    username = getpass.getuser()
+
+    # Submit job to Deadline
+    extra_env = {
+        "AVALON_PROJECT": project_name,
+        "AVALON_ASSET": asset_name,
+        "AVALON_TASK": task_name,
+        # "AVALON_APP_NAME": "standalonepublisher",
+        # "AVALON_APP": "standalonepublisher",
+        "OPENPYPE_USERNAME": username,
+        "AVALON_WORKDIR": os.path.dirname(work_root),
+        "OPENPYPE_PUBLISH_JOB": "1",
+        "OPENPYPE_RENDER_JOB": "0",
+        "OPENPYPE_REMOTE_JOB": "0",
+        "OPENPYPE_LOG_NO_COLORS": "1",
+        "OPENPYPE_SG_USER": username,
+        "KITSU_LOGIN": "admin@example.com",
+        "KITSU_PWD": "mysecretpassword",
+    }
+
+    deadline_task_name = "Rebase workfile {} {} {}".format(
+        project_name,
+        asset_name,
+        task_name,
+    )
+
+    response = submit.payload_submit(
+        plugin="OpenPype",
+        plugin_data=plugin_data,
+        batch_name=batch_name,
+        task_name=deadline_task_name,
+        group=dl_constants.OP_GROUP,
+        pool=dl_constants.OP_POOL,
+        extra_env=extra_env,
+        response_data=response_data,
+    )
+
+    return response
