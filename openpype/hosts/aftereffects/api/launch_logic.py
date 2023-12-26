@@ -8,10 +8,7 @@ import functools
 import traceback
 
 
-from wsrpc_aiohttp import (
-    WebSocketRoute,
-    WebSocketAsync
-)
+from wsrpc_aiohttp import WebSocketRoute, WebSocketAsync
 
 from qtpy import QtCore
 
@@ -46,6 +43,12 @@ def main(*subprocess_args):
     app = get_openpype_qt_app()
     app.setQuitOnLastWindowClosed(False)
 
+    if cast_to_bool(os.environ.get("HS_FORCE_REBASE")):
+        # Launch headless
+        subprocess_args = tuple(
+            [arg.replace("AfterFX.exe", "AfterFX.com") for arg in subprocess_args] + ["-noui"]
+        )
+
     launcher = ProcessLauncher(subprocess_args)
     launcher.start()
 
@@ -55,10 +58,7 @@ def main(*subprocess_args):
 
         launcher.execute_in_main_thread(
             functools.partial(
-                webpublisher_addon.headless_publish,
-                log,
-                "CloseAE",
-                is_in_tests()
+                webpublisher_addon.headless_publish, log, "CloseAE", is_in_tests()
             )
         )
 
@@ -80,8 +80,14 @@ def main(*subprocess_args):
 
 def force_rebase():
     # Rebuild the Workfile according to the template.
-    from openpype.hosts.aftereffects.api.workfile_template_builder import \
-        build_workfile_template, get_comp_by_name
+    from openpype.hosts.aftereffects.api.workfile_template_builder import (
+        build_workfile_template,
+        get_comp_by_name,
+    )
+
+    stub = get_stub()
+    stub.beginSuppressDialogs()
+
     log.info("Building Workfile from Template.")
     build_workfile_template()
 
@@ -89,11 +95,15 @@ def force_rebase():
     log.info("Updating renderCompositingMain with context settings.")
     frames = True
     resolution = True
-    comp_ids = [get_comp_by_name('renderCompositingMain').id]
-    set_settings(frames, resolution, comp_ids)
+    comp_ids = [get_comp_by_name("renderCompositingMain").id]
+    set_settings(frames, resolution, comp_ids, False)
 
-    stub = get_stub()
+    log.info("Saving workfile...")
     stub.save()
+
+    log.info("Closing...")
+    stub.endSuppressDialogs()
+    stub.close()
 
 
 def cast_to_bool(val):
@@ -135,6 +145,7 @@ def show_tool_by_name(tool_name):
 
 class ProcessLauncher(QtCore.QObject):
     """Launches webserver, connects to it, runs main thread."""
+
     route_name = "AfterEffects"
     _main_thread_callbacks = collections.deque()
 
@@ -165,8 +176,7 @@ class ProcessLauncher(QtCore.QObject):
     @property
     def log(self):
         if self._log is None:
-            self._log = Logger.get_logger("{}-launcher".format(
-                self.route_name))
+            self._log = Logger.get_logger("{}-launcher".format(self.route_name))
         return self._log
 
     @property
@@ -188,7 +198,6 @@ class ProcessLauncher(QtCore.QObject):
             return False
 
         try:
-
             _stub = get_stub()
             if _stub:
                 return True
@@ -209,7 +218,7 @@ class ProcessLauncher(QtCore.QObject):
         self._start_process_timer.start()
 
     def exit(self):
-        """ Exit whole application. """
+        """Exit whole application."""
         if self._start_process_timer.isActive():
             self._start_process_timer.stop()
         if self._loop_timer.isActive():
@@ -264,28 +273,20 @@ class ProcessLauncher(QtCore.QObject):
         if self.is_host_connected:
             self._start_process_timer.stop()
             self._loop_timer.start()
-        elif (
-            not self.is_process_running
-            or not self.websocket_server_is_running
-        ):
+        elif not self.is_process_running or not self.websocket_server_is_running:
             self.exit()
 
     def _init_server(self):
         if self._websocket_server is not None:
             return
 
-        self.log.debug(
-            "Initialization of websocket server for host communication"
-        )
+        self.log.debug("Initialization of websocket server for host communication")
 
         self._websocket_server = websocket_server = WebServerTool()
         if websocket_server.port_occupied(
-            websocket_server.host_name,
-            websocket_server.port
+            websocket_server.host_name, websocket_server.port
         ):
-            self.log.info(
-                "Server already running, sending actual context and exit."
-            )
+            self.log.info("Server already running, sending actual context and exit.")
             asyncio.run(websocket_server.send_context_change(self.route_name))
             self.exit()
             return
@@ -295,9 +296,7 @@ class ProcessLauncher(QtCore.QObject):
         # Add after effects route to websocket handler
 
         print("Adding {} route".format(self.route_name))
-        WebSocketAsync.add_route(
-            self.route_name, AfterEffectsRoute
-        )
+        WebSocketAsync.add_route(self.route_name, AfterEffectsRoute)
         self.log.info("Starting websocket server for host communication")
         websocket_server.start_server()
 
@@ -309,7 +308,7 @@ class ProcessLauncher(QtCore.QObject):
             self._process = subprocess.Popen(
                 self._subprocess_args,
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
+                stderr=subprocess.DEVNULL,
             )
         except Exception:
             self.log.info("exce", exc_info=True)
@@ -318,11 +317,12 @@ class ProcessLauncher(QtCore.QObject):
 
 class AfterEffectsRoute(WebSocketRoute):
     """
-        One route, mimicking external application (like Harmony, etc).
-        All functions could be called from client.
-        'do_notify' function calls function on the client - mimicking
-            notification after long running job on the server or similar
+    One route, mimicking external application (like Harmony, etc).
+    All functions could be called from client.
+    'do_notify' function calls function on the client - mimicking
+        notification after long running job on the server or similar
     """
+
     instance = None
 
     def init(self, **kwargs):
@@ -340,11 +340,11 @@ class AfterEffectsRoute(WebSocketRoute):
     # client functions
     async def set_context(self, project, asset, task):
         """
-            Sets 'project' and 'asset' to envs, eg. setting context
+        Sets 'project' and 'asset' to envs, eg. setting context
 
-            Args:
-                project (str)
-                asset (str)
+        Args:
+            project (str)
+            asset (str)
         """
         log.info("Setting context change")
         log.info("project {} asset {} ".format(project, asset))
@@ -359,9 +359,10 @@ class AfterEffectsRoute(WebSocketRoute):
             os.environ["AVALON_TASK"] = task
 
     async def read(self):
-        log.debug("aftereffects.read client calls server server calls "
-                  "aftereffects client")
-        return await self.socket.call('aftereffects.read')
+        log.debug(
+            "aftereffects.read client calls server server calls " "aftereffects client"
+        )
+        return await self.socket.call("aftereffects.read")
 
     # panel routes for tools
     async def workfiles_route(self):
@@ -391,8 +392,7 @@ class AfterEffectsRoute(WebSocketRoute):
     def _tool_route(self, _tool_name):
         """The address accessed when clicking on the buttons."""
 
-        partial_method = functools.partial(show_tool_by_name,
-                                           _tool_name)
+        partial_method = functools.partial(show_tool_by_name, _tool_name)
 
         ProcessLauncher.execute_in_main_thread(partial_method)
 
@@ -400,9 +400,7 @@ class AfterEffectsRoute(WebSocketRoute):
         return "nothing"
 
     def _settings_route(self, frames, resolution):
-        partial_method = functools.partial(set_settings,
-                                           frames,
-                                           resolution)
+        partial_method = functools.partial(set_settings, frames, resolution)
 
         ProcessLauncher.execute_in_main_thread(partial_method)
 
@@ -410,8 +408,10 @@ class AfterEffectsRoute(WebSocketRoute):
         return "nothing"
 
     def create_placeholder_route(self):
-        from openpype.hosts.aftereffects.api.workfile_template_builder import \
-            create_placeholder
+        from openpype.hosts.aftereffects.api.workfile_template_builder import (
+            create_placeholder,
+        )
+
         partial_method = functools.partial(create_placeholder)
 
         ProcessLauncher.execute_in_main_thread(partial_method)
@@ -420,8 +420,10 @@ class AfterEffectsRoute(WebSocketRoute):
         return "nothing"
 
     def update_placeholder_route(self):
-        from openpype.hosts.aftereffects.api.workfile_template_builder import \
-            update_placeholder
+        from openpype.hosts.aftereffects.api.workfile_template_builder import (
+            update_placeholder,
+        )
+
         partial_method = functools.partial(update_placeholder)
 
         ProcessLauncher.execute_in_main_thread(partial_method)
@@ -430,8 +432,10 @@ class AfterEffectsRoute(WebSocketRoute):
         return "nothing"
 
     def build_workfile_template_route(self):
-        from openpype.hosts.aftereffects.api.workfile_template_builder import \
-            build_workfile_template
+        from openpype.hosts.aftereffects.api.workfile_template_builder import (
+            build_workfile_template,
+        )
+
         partial_method = functools.partial(build_workfile_template)
 
         ProcessLauncher.execute_in_main_thread(partial_method)
@@ -448,10 +452,12 @@ class AfterEffectsRoute(WebSocketRoute):
 
         from importlib import reload
         from openpype.hosts.aftereffects.api import workfile_template_builder
+
         workfile_template_builder = reload(workfile_template_builder)
 
-        partial_method = functools.partial(workfile_template_builder.
-                                           build_workfile_sequence_template)
+        partial_method = functools.partial(
+            workfile_template_builder.build_workfile_sequence_template
+        )
         ProcessLauncher.execute_in_main_thread(partial_method)
 
         # Required return statement.
@@ -460,10 +466,10 @@ class AfterEffectsRoute(WebSocketRoute):
     def multi_shot_publish_route(self):
         from importlib import reload
         from openpype.hosts.aftereffects.api import multi_shot_publish
+
         multi_shot_publish = reload(multi_shot_publish)
 
-        partial_method = functools.partial(multi_shot_publish.
-                                           publish)
+        partial_method = functools.partial(multi_shot_publish.publish)
         ProcessLauncher.execute_in_main_thread(partial_method)
 
         return "nothing"

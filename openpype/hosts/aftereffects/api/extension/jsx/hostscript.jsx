@@ -887,7 +887,9 @@ function getAppVersion() {
 }
 
 function printMsg(msg) {
-    alert(msg);
+    if (getEnv("SUPRESS_DIALOG") != "1"){
+        alert(msg);
+    }
 }
 
 function addPlaceholder(name, width, height, fps, duration) {
@@ -1151,4 +1153,12 @@ function getLayerType(layer) {
 
             return "Invalid";
     }
+}
+
+function beginSuppressDialogs() {
+    app.beginSuppressDialogs();
+}
+
+function endSuppressDialogs() {
+    app.endSuppressDialogs(false);
 }

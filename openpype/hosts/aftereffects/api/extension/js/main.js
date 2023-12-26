@@ -413,6 +413,23 @@ function main(websocket_url){
             });
     });
 
+    RPC.addRoute('AfterEffects.beginSuppressDialogs', function (data) {
+        log.warn('beginSuppressDialogs');
+        return runEvalScript("beginSuppressDialogs()")
+            .then(function (result) {
+                log.warn("beginSuppressDialogs: " + result);
+                return result;
+            });
+    });
+
+    RPC.addRoute('AfterEffects.endSuppressDialogs', function (data) {
+        log.warn('endSuppressDialogs');
+        return runEvalScript("endSuppressDialogs()")
+            .then(function (result) {
+                log.warn("endSuppressDialogs: " + result);
+                return result;
+            });
+    });
 }
 
 /** main entry point **/

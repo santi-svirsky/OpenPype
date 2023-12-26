@@ -785,6 +785,16 @@ class AfterEffectsServerStub():
 
         return self._handle_return(res)
 
+    def beginSuppressDialogs(self):
+        """Triggers Javascript alert dialog."""
+        self.websocketserver.call(self.client.call
+                                  ('AfterEffects.beginSuppressDialogs'))
+
+    def endSuppressDialogs(self):
+        """Triggers Javascript alert dialog."""
+        self.websocketserver.call(self.client.call
+                                  ('AfterEffects.endSuppressDialogs'))
+
 
 def get_stub():
     """
