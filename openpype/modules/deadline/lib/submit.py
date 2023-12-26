@@ -7,6 +7,7 @@ import json
 from openpype.modules.deadline import constants
 
 import getpass
+
 logger = Logger.get_logger(__name__)
 
 # Default Deadline job
@@ -64,15 +65,34 @@ def payload_submit(
         "AuxFiles": [],
     }
 
-    if response_data.get("_id"):
+    if isinstance(response_data, list):
+        dependencies = {}
+        for index, resp in enumerate(response_data):
+            key = "JobDependency{}".format(index)
+            value = resp.get("_id")
+
+            if value:
+                dependencies[key] = value
+
         payload["JobInfo"].update(
             {
                 "JobType": "Normal",
-                "BatchName": response_data["Props"]["Batch"],
-                "JobDependency0": response_data["_id"],
+                "BatchName": batch_name,
                 "ChunkSize": 99999999,
             }
         )
+        payload["JobInfo"].update(dependencies)
+
+    else:
+        if response_data.get("_id"):
+            payload["JobInfo"].update(
+                {
+                    "JobType": "Normal",
+                    "BatchName": response_data["Props"]["Batch"],
+                    "JobDependency0": response_data["_id"],
+                    "ChunkSize": 99999999,
+                }
+            )
 
     # Include critical environment variables with submission
     keys = [
@@ -100,9 +120,7 @@ def payload_submit(
     payload["JobInfo"].update(
         {
             "EnvironmentKeyValue%d"
-            % index: "{key}={value}".format(
-                key=key, value=environment[key]
-            )
+            % index: "{key}={value}".format(key=key, value=environment[key])
             for index, key in enumerate(environment)
         }
     )
