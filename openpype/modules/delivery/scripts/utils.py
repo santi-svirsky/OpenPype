@@ -11,7 +11,6 @@ from openpype.lib import Logger, is_running_from_build
 from openpype.pipeline import Anatomy
 from openpype.pipeline.colorspace import get_imageio_config
 
-
 logger = Logger.get_logger(__name__)
 
 # Regular expression that allows us to replace the frame numbers of a file path
