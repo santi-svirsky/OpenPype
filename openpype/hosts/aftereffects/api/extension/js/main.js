@@ -430,6 +430,17 @@ function main(websocket_url){
                 return result;
             });
     });
+
+    RPC.addRoute('AfterEffects.moveToFolder', function (data) {
+        log.warn('moveToFolder ' + data.item_id + ', ' + data.folder_id + data.move_related_folder);
+        return runEvalScript("moveToFolder("+ data.item_id + "," +
+                                              data.folder_id + "," +
+                                              data.move_related_folder + ")")
+            .then(function (result) {
+                log.warn("moveToFolder: " + result);
+                return result;
+            });
+    });
 }
 
 /** main entry point **/

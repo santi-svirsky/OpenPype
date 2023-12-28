@@ -43,12 +43,6 @@ def main(*subprocess_args):
     app = get_openpype_qt_app()
     app.setQuitOnLastWindowClosed(False)
 
-    if cast_to_bool(os.environ.get("HS_FORCE_REBASE")):
-        # Launch headless
-        subprocess_args = tuple(
-            [arg.replace("AfterFX.exe", "AfterFX.com") for arg in subprocess_args] + ["-noui"]
-        )
-
     launcher = ProcessLauncher(subprocess_args)
     launcher.start()
 

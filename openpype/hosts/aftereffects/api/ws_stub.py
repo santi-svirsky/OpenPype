@@ -40,6 +40,7 @@ class AEItem(object):
     path = attr.ib(default=False)  # path to FootageItem to validate
     # list of composition Footage is in
     containing_comps = attr.ib(factory=list)
+    parent_folder = attr.ib(default=None)
 
 
 class AfterEffectsServerStub():
@@ -710,7 +711,9 @@ class AfterEffectsServerStub():
                           d.get("is_placeholder"),
                           d.get("uuid"),
                           d.get("path"),
-                          d.get("containing_comps"),)
+                          d.get("containing_comps"),
+                          d.get("parent_folder"),
+                          )
 
             ret.append(item)
         return ret
@@ -794,6 +797,14 @@ class AfterEffectsServerStub():
         """Triggers Javascript alert dialog."""
         self.websocketserver.call(self.client.call
                                   ('AfterEffects.endSuppressDialogs'))
+
+    def moveToFolder(self, item_id, folder_id, move_related_folder):
+        """Triggers Javascript alert dialog."""
+        self.websocketserver.call(self.client.call
+                                  ('AfterEffects.moveToFolder',
+                                   item_id=item_id,
+                                   folder_id=folder_id,
+                                   move_related_folder=move_related_folder))
 
 
 def get_stub():

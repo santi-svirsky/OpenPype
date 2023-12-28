@@ -213,6 +213,22 @@ class AEPlaceholderLoadPlugin(AEPlaceholderPlugin, PlaceholderLoadMixin):
     def load_succeed(self, placeholder, container):
         placeholder_item_id, _ = self._get_item(placeholder)
         item_id = container.id
+
+        stub = get_stub()
+
+        placeholder = stub.get_item(placeholder_item_id)
+        parent_folder = stub.get_item(placeholder.parent_folder)
+
+        # if the item is type Comp, then there should be a
+        # FolderItem with the Layer sources that we need to move too.
+        # The item is already renamed so we can't match by "<compName> Layers"
+        self.log.info("Moving {} to {}".format(item_id, parent_folder.id))
+        item = stub.get_item(item_id)
+        if item.item_type == "comp":
+            stub.moveToFolder(item_id, parent_folder.id, True)
+        else:
+            stub.moveToFolder(item_id, parent_folder.id, False)
+
         get_stub().add_item_instead_placeholder(placeholder_item_id, item_id)
 
 

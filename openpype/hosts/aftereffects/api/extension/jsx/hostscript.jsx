@@ -250,7 +250,8 @@ function _getItem(item, comps, folders, footages) {
         "id": item.id,
         "type": item_type,
         "path": path,
-        "containing_comps": containing_comps
+        "containing_comps": containing_comps,
+        "parent_folder": item.parentFolder.id
     };
     return JSON.stringify(item);
 }
@@ -1161,4 +1162,16 @@ function beginSuppressDialogs() {
 
 function endSuppressDialogs() {
     app.endSuppressDialogs(false);
+}
+
+function moveToFolder(item_id, folder_id, move_related_folder){
+    item = app.project.itemByID(item_id);
+    folder = app.project.itemByID(folder_id);
+
+    item.parentFolder = folder;
+
+    if (move_related_folder){
+        parentFolder = item.layer(1).source.parentFolder
+        parentFolder.parentFolder = folder
+    }
 }
