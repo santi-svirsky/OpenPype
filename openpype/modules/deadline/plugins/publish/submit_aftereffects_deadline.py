@@ -27,6 +27,7 @@ class DeadlinePluginInfo():
     AWSAssetFile0 = attr.ib(default=None)
     Version = attr.ib(default=None)
     MultiProcess = attr.ib(default=None)
+    FailOnWarnings = attr.ib(default=None)
 
 
 class AfterEffectsSubmitDeadline(
