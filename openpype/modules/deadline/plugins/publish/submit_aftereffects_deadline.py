@@ -136,6 +136,7 @@ class AfterEffectsSubmitDeadline(
         deadline_plugin_info.MultiProcess = env_multi and self.multiprocess
         deadline_plugin_info.SceneFile = self.scene_path
         deadline_plugin_info.Output = render_path.replace("\\", "/")
+        deadline_plugin_info.FailOnWarnings = True
 
         return attr.asdict(deadline_plugin_info)
 
