@@ -572,15 +572,17 @@ def submit_rebase_ae_workfile_job(
         task_name,
     )
 
-    response = submit.payload_submit(
-        plugin="OpenPype",
-        plugin_data=plugin_data,
-        batch_name=batch_name,
-        task_name=deadline_task_name,
-        group=dl_constants.OP_GROUP,
-        pool=dl_constants.OP_POOL,
-        extra_env=extra_env,
-        response_data=response_data,
-    )
+    if not any([".aep" in f for f in os.listdir(work_folder)]):
 
-    return response
+        response = submit.payload_submit(
+            plugin="OpenPype",
+            plugin_data=plugin_data,
+            batch_name=batch_name,
+            task_name=deadline_task_name,
+            group=dl_constants.OP_GROUP,
+            pool=dl_constants.OP_POOL,
+            extra_env=extra_env,
+            response_data=response_data,
+        )
+
+        return response
