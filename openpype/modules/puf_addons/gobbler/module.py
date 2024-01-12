@@ -573,7 +573,7 @@ def submit_rebase_ae_workfile_job(
         task_name,
     )
 
-    if not any([".aep" in f for f in os.listdir(work_folder)]):
+    if not any([".aep" in f for f in os.listdir(work_root)]):
 
         response = submit.payload_submit(
             plugin="OpenPype",
