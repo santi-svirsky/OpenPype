@@ -398,6 +398,7 @@ def _find_sources(source_directory, formats_list):
     log_warnings = []
 
     for dirpath, dirnames, filenames in os.walk(source_directory):
+        log.info("Checking directory: {}".format(dirpath))
         # Check if the file is part of a sequence
         dir_contents = fileseq.findSequencesOnDisk(dirpath)
         # log.info(sequence)
