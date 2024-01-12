@@ -425,7 +425,7 @@ def _find_sources(source_directory, formats_list):
             # log.info(f"Repr found: {representations_found}")
             if representations_found:
                 publish_item = (representation_path, representations_found, item_found)
-            results.append(publish_item)
+                results.append(publish_item)
 
 
         if log_warnings:
