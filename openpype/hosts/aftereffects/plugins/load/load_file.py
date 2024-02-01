@@ -17,6 +17,7 @@ class FileLoader(api.AfterEffectsLoader):
                 "render",
                 "prerender",
                 "review",
+                "online",
                 "audio"]
     representations = ["*"]
 

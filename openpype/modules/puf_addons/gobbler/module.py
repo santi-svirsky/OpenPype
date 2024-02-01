@@ -142,9 +142,10 @@ def gobble(project_name, input_dir, matching_mode):
 
             if 'psd' in list(representations.keys()) and 'background' in item_path.casefold():
                 # file is psd, so backgound
-                family_name = "render"
                 task_name = "Background"
+                family_name = "online"
                 subset_name = os.path.splitext(os.path.basename(item_path))[0]
+                subset_name = "bg" + subset_name
 
                 # get rid of png representation if found - workaround. see PIPE-1725
                 representations.pop('png', None)
@@ -153,18 +154,21 @@ def gobble(project_name, input_dir, matching_mode):
 
             elif 'png' in list(representations.keys()) and 'render' in item_path.casefold():
                 # file is png and not bg, so anim
-                family_name = "render"
                 task_name = "Animation"
+                family_name = "online"
                 if file_seq:
                     subset_name = file_seq.basename().lstrip(string.whitespace + '_').rstrip(string.whitespace + '_')
                 else:
                     subset_name = "renderAnimationMain"
+
+                subset_name = "anim" + subset_name
+
                 will_publish = True
 
             elif 'mp4' in list(representations.keys()):
                 # includes mp4 and no png or psd, so assuming animatic
-                family_name = "plate"
                 task_name = "Edit"
+                family_name = "online"
                 subset_name = "plateAnimatic"
                 will_publish = True
 
@@ -173,7 +177,7 @@ def gobble(project_name, input_dir, matching_mode):
 
 
             publish_data = {
-                "families": ["review"],
+                "families": ["online"],
             }
 
             if will_publish:
@@ -573,7 +577,7 @@ def submit_rebase_ae_workfile_job(
         task_name,
     )
 
-    if not any([".aep" in f for f in os.listdir(work_root)]):
+    if os.path.exists(work_root) and not any([".aep" in f for f in os.listdir(work_root)]):
 
         response = submit.payload_submit(
             plugin="OpenPype",

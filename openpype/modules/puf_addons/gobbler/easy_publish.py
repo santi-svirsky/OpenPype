@@ -17,12 +17,14 @@ REVIEW_FAMILIES = {
     "render",
     "image",
     "plate",
+    "online",
 }
 
 PUBLISH_TO_SG_FAMILIES = {
     "render",
     "image",
     "plate",
+    "online",
 }
 
 
