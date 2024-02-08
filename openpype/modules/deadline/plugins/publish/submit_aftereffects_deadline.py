@@ -79,6 +79,8 @@ class AfterEffectsSubmitDeadline(
             os.path.dirname(self._instance.data["expectedFiles"][0])
         dln_job_info.JobDelay = "00:00:00"
 
+        dln_job_info.AssetDependency += self.scene_path
+
         keys = [
             "FTRACK_API_KEY",
             "FTRACK_API_USER",
