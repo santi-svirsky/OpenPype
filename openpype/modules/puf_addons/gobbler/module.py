@@ -30,7 +30,7 @@ import pprint
 
 log = Logger.get_logger("Gobbler")
 
-KNOWN_FORMATS = ['mp4', 'psd', 'png']
+KNOWN_FORMATS = ['mp4', 'psd', 'png', 'psb']
 
 
 class GobblerModule(OpenPypeModule):
@@ -140,7 +140,12 @@ def gobble(project_name, input_dir, matching_mode):
 
             will_publish = False
 
-            if 'psd' in list(representations.keys()) and 'background' in item_path.casefold():
+            is_background = False
+            bg_extensions = ['psd', "psb"]
+            is_background = any([key for key in bg_extensions if key in list(representations.keys())])
+            is_background = is_background and 'background' in item_path.casefold()
+
+            if is_background:
                 # file is psd, so backgound
                 task_name = "Background"
                 family_name = "online"
@@ -152,7 +157,11 @@ def gobble(project_name, input_dir, matching_mode):
 
                 will_publish = True
 
-            elif 'png' in list(representations.keys()) and 'render' in item_path.casefold():
+            is_animation = False
+            animation_extensions = ['png']
+            is_animation = any([key for key in animation_extensions if key in list(representations.keys())])
+            is_animation = is_animation and 'render' in item_path.casefold()
+            if is_animation:
                 # file is png and not bg, so anim
                 task_name = "Animation"
                 family_name = "online"
@@ -165,16 +174,16 @@ def gobble(project_name, input_dir, matching_mode):
 
                 will_publish = True
 
-            elif 'mp4' in list(representations.keys()):
+            is_animatic = False
+            animatic_extensions = ['mp4']
+            is_animatic = any([key for key in animatic_extensions if key in list(representations.keys())])
+
+            if is_animatic:
                 # includes mp4 and no png or psd, so assuming animatic
                 task_name = "Edit"
                 family_name = "online"
                 subset_name = "plateAnimatic"
                 will_publish = True
-
-            else:
-                log.info(f"WARNING: {item_name} slipped through filters and was not properly matched to a task")
-
 
             publish_data = {
                 "families": ["online"],
@@ -182,13 +191,33 @@ def gobble(project_name, input_dir, matching_mode):
 
             if will_publish:
                 response = easy_publish.publish_version(project_name,
-                                            asset_name,
-                                            task_name,
-                                            family_name,
-                                            subset_name,
-                                            representations,
-                                            publish_data,
-                                            batch_name,)
+                                                        asset_name,
+                                                        task_name,
+                                                        family_name,
+                                                        subset_name,
+                                                        representations,
+                                                        publish_data,
+                                                        batch_name,)
+                log_message = """Submitting:
+                    \tproject_name: {}
+                    \tasset_name: {}
+                    \ttask_name: {}
+                    \tfamily_name: {}
+                    \tsubset_name: {}
+                    \trepresentations: {}
+                    \tpublish_data: {}
+                    \tbatch_name: {}
+                    """.format(project_name,
+                               asset_name,
+                               task_name,
+                               family_name,
+                               subset_name,
+                               representations,
+                               publish_data,
+                               batch_name,)
+                log.info(log_message)
+
+                response = None
                 if not published_assets.get(asset_name):
                     published_assets[asset_name] = {
                         "batch_name": batch_name,
@@ -196,18 +225,38 @@ def gobble(project_name, input_dir, matching_mode):
                     }
                 else:
                     published_assets[asset_name]["response_data"].append(response)
+            else:
+                log.warning(f"WARNING: {item_name} slipped through filters and was not properly matched to a task")
 
         else:
-            log.warn(f">>> Fuzzy fail. Will not publish '{item_path}'")
+            log.warn(f"WARNING: Fuzzy fail. Will not publish '{item_path}'")
 
     for key, value in published_assets.items():
+        project_name = project_name
+        task_name = "Compositing"
+        asset_name = key
+        batch_name = value["batch_name"]
+        response_data = value["response_data"]
+
         submit_rebase_ae_workfile_job(
             project_name=project_name,
-            task_name="Compositing",
-            asset_name=key,
-            batch_name=value["batch_name"],
-            response_data=value["response_data"],
+            task_name=task_name,
+            asset_name=asset_name,
+            batch_name=batch_name,
+            response_data=response_data,
         )
+        log_message = """Submitting:
+            \tproject_name: {}
+            \ttask_name: {}
+            \tasset_name: {}
+            \tbatch_name: {}
+            \tresponse_data: {}
+            """.format(project_name,
+                       task_name,
+                       asset_name,
+                       batch_name,
+                       response_data,)
+        log.info(log_message)
 
     # TODO: clean up staging directory
 
@@ -394,49 +443,45 @@ def _fuzz_asset(item, assets_dict, score_cutoff=80):
 
 
 def _find_sources(source_directory, formats_list):
-
     log.info(f"Looking for things to publish in {source_directory}")
     import fileseq
     results = list()
-    log_success = []
-    log_warnings = []
+    log_messages = []
 
     for dirpath, dirnames, filenames in os.walk(source_directory):
         log.info("Checking directory: {}".format(dirpath))
         # Check if the file is part of a sequence
         dir_contents = fileseq.findSequencesOnDisk(dirpath)
-        # log.info(sequence)
 
         if dir_contents: # dir not empty
-            representations_found = {}
-            # log.info(f"Found {len(dir_contents)} items in {dirpath}")
             for item in dir_contents:
-                # Append the sequence to the list
+                representations_found = {}
+
                 extension = item.extension().strip('.')
                 if extension in formats_list:
                     if item.frameSet():  # if sequence
                         representation_path = item.frame(item.start())
-                        log.info(f"sequence: {representation_path}")
+                        log_messages.append(f"Found: sequence: {representation_path}")
                     else:  # single
                         representation_path = str(item)
-                        log.info(f"single file: {representation_path}")
+                        log_messages.append(f"Found: single file: {representation_path}")
+
                     representations_found[extension] = representation_path
                     item_found = item
 
                 else:
-                    log_warnings.append(f"Skipped {os.path.relpath(str(item), source_directory)} because extension is not in {formats_list}")
+                    log_messages.append(f"Skipped: {os.path.relpath(str(item), source_directory)} because extension is not in {formats_list}")
                     # representation_path = None
 
-            # log.info(f"Repr found: {representations_found}")
-            if representations_found:
-                publish_item = (representation_path, representations_found, item_found)
-                results.append(publish_item)
+                # log.info(f"Repr found: {representations_found}")
+                if representations_found:
+                    publish_item = (representation_path, representations_found, item_found)
+                    results.append(publish_item)
 
-
-        if log_warnings:
-            warn_count = len(log_warnings)
-            warn_string = '\n'.join(log_warnings)
-            log.warning(f"WARNINGS: {warn_count}: \n{warn_string}")
+        if log_messages:
+            warn_count = len(log_messages)
+            warn_string = '\n\t'.join(log_messages)
+            log.info(f"_find_sources: {warn_count}: \n\t{warn_string}")
 
     # log.info(f"Results: {results}")
 
