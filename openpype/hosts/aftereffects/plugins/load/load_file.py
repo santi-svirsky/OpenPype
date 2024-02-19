@@ -42,7 +42,7 @@ class FileLoader(api.AfterEffectsLoader):
             return
 
         path = path.replace("\\", "/")
-        if '.psd' in path:
+        if '.psd' in path or '.psb' in path:
             import_options['ImportAsType'] = 'ImportAsType.COMP'
 
         comp = stub.import_file(path, stub.LOADED_ICON + comp_name,
