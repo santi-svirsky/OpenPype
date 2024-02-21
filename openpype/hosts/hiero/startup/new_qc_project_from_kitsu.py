@@ -1,7 +1,6 @@
 """ OpenPype custom script for resetting read nodes start frame values """
 import os
 import re
-import re
 import pprint
 import distutils.dir_util
 
@@ -16,11 +15,13 @@ import gazu
 
 from openpype.modules.kitsu.utils import credentials
 from openpype.client import get_representations
+from openpype.pipeline import Anatomy
 
 from qtpy import QtWidgets
 from qtpy.QtWidgets import QInputDialog, QLineEdit
 
-from openpype.lib import Logger
+from openpype.lib import Logger, StringTemplate
+
 log = Logger.get_logger(__name__)
 
 def main():
@@ -30,107 +31,6 @@ def main():
                                         "Playlist URL:", QLineEdit.Normal)
 
     create_qc_timeline(playlist_url)
-
-# def create_project():
-#     project = hiero.core.newProject()
-
-#     project_path = os.path.join(
-#         hiero.plugins.hsutils.get_project_path(), "edit", "qc")
-
-#     job_name = os.environ["JOB"]
-#     project_version = 1
-
-#     """
-#     create directory if doesn't exist
-#     search for latest project version number if exists
-#     """
-#     if not os.path.exists(project_path):
-#         distutils.dir_util.mkpath(project_path)
-#     else:
-#         projects = [project for project in os.listdir(
-#             project_path) if ".hrox" in project]
-#         projects = sorted(
-#             projects, key=lambda project: getVersionNumberFromText(project), reverse=True)
-
-#         if projects:
-#             project_version = getVersionNumberFromText(projects[0]) + 1
-
-#     project_name = "{}_qc_v{}.hrox".format(job_name, project_version)
-
-#     project.saveAs(os.path.join(project_path, project_name))
-
-#     return project
-
-# ------------------------------------------
-# UTILITY FUNCTIONS - EXTRACT ID FROM URL
-# ------------------------------------------
-# def getVersionNumberFromText(text):
-#     """
-#     Searching for _v#
-#     Return #
-#     """
-#     match = re.match(r".*_v([0-9]+).*", text)
-
-#     if match:
-#         return int(match.group(1))
-#     else:
-#         return None
-
-
-# def createClipFromVersion(version):
-#     frame_first = version.frame_first
-#     frame_last = version.frame_last
-#     fps = version.project.fps
-#     clip = None
-
-#     # Path to Frames from Tracker
-#     path_to_frames = version._path_to_frames
-#     if os.path.exists(os.path.dirname(version._path_to_frames)):
-#         if len(os.listdir(os.path.dirname(version._path_to_frames))) > 0:
-#             clip = hiero.core.Clip(version._path_to_frames)
-#             clip.setName("{}@{}".format(version.name, version.link.name))
-#             return clip
-
-#     # Computed Path To Frames
-#     path_to_frames = version.get_path_to_frames(absolute=True)
-#     if os.path.exists(os.path.dirname(path_to_frames)):
-#         if len(os.listdir(os.path.dirname(path_to_frames))) > 0:
-#             clip = hiero.core.Clip(path_to_frames)
-#             clip.setName("{}@{}".format(version.name, version.link.name))
-#             return clip
-
-#     # Offline Media
-#     if frame_first and frame_last and fps:
-#         media_source = hiero.core.MediaSource().createOfflineVideoMediaSource(
-#             version._path_to_frames, frame_first, frame_last - frame_first + 1, fps)
-
-#         clip = hiero.core.Clip(media_source)
-#         clip.setName("{}@{}".format(version.name, version.link.name))
-
-#         return clip
-
-
-# helper method for creating track items from clips
-# def createTrackItem(track, trackItemName, sourceClip, lastTrackItem=None):
-#     # create the track item
-#     trackItem = track.createTrackItem(trackItemName)
-
-#     # set it's source
-#     trackItem.setSource(sourceClip)
-
-#     # set it's timeline in and timeline out values, offseting by the track item before if need be
-#     if lastTrackItem:
-#         trackItem.setTimelineIn(lastTrackItem.timelineOut() + 1)
-#         trackItem.setTimelineOut(
-#             lastTrackItem.timelineOut() + sourceClip.duration())
-#     else:
-#         trackItem.setTimelineIn(0)
-#         trackItem.setTimelineOut(trackItem.sourceDuration() - 1)
-
-#     # add the item to the track
-#     track.addItem(trackItem)
-#     return trackItem
-
 
 
 def list_files(path):
@@ -144,18 +44,17 @@ def list_files(path):
 
 
 def create_qc_timeline(playlist_url):
-
     user, password = credentials.load_credentials()
 
     if credentials.validate_credentials(user, password):
         # URL has the playlist id that we need to locate the playlist
         pattern = r"playlists\/([^\/]+)"
         results = re.search(pattern, playlist_url)
-
         playlist_id = None
+
         if len(results.groups()) > 0:
             playlist_id = results.group(1)
-            log.info(f"Playlist ID: {playlist_id}")
+            log.info("Playlist ID: {}".format(playlist_id))
 
             gazu.log_in(user, password)
 
@@ -166,12 +65,13 @@ def create_qc_timeline(playlist_url):
             myProject = hiero.core.projects()[-1]
             clipsBin = myProject.clipsBin()
 
+            # Create bin, name it and add it to clip bin.
             qc_bin = hiero.core.Bin("QC_{}".format(playlist_name))
             clipsBin.addItem(qc_bin)
 
+            # Add sequence to bin and create tracks
             sequence = hiero.core.Sequence(playlist_name)
             clipsBin.addItem(hiero.core.BinItem(sequence))
-
             videotrack = hiero.core.VideoTrack("latest compo")
             audiotrack = hiero.core.AudioTrack("animatic")
 
@@ -207,8 +107,8 @@ def create_qc_timeline(playlist_url):
                         break
 
                 if frame_in:
-                    path_to_representation = frame_in["path"].replace("\\", "/")
-                    path_to_representation = path_to_representation.replace("{root[work]}", "Y:/WORKS/_openpype")
+                    path_to_representation = frame_in["path"]
+                    path_to_representation = map_representation_path(path_to_representation, shot["project_name"])
                     add_track_item(path_to_representation, qc_bin, videotrack, timeline_in)
 
                 #####################
@@ -225,12 +125,14 @@ def create_qc_timeline(playlist_url):
                         max_index = int(repr["context"]["version"])
                         newest_version = repr
 
-                animatic_path = newest_version["data"]["path"].replace("\\", "/")
+                print(newest_version)
+                animatic_path = newest_version["data"]["path"]
+                animatic_path = map_representation_path(animatic_path, shot["project_name"])
 
                 source_duration = add_track_item(animatic_path, qc_bin, audiotrack, timeline_in)
 
                 # Move the position in timeline
-                timeline_in += source_duration + 5
+                timeline_in += source_duration
 
             # Add tracks to sequence and display it
             sequence.addTrack(audiotrack)
@@ -240,17 +142,26 @@ def create_qc_timeline(playlist_url):
 
 
 def add_track_item(path_to_representation, bin, track, timeline_in):
+    # Add a track item to the timeline, at the frame indicated in "timeline_in"
+
+    log.info("Adding new item to timeline: {}".format(path_to_representation))
     repr_clip = bin.createClip(path_to_representation)
+    repr_clip.rescan()
     trackItem = track.createTrackItem(path_to_representation)
     trackItem.setSource(repr_clip)
+
+    # Keep track duration as variable
+    track_duration = trackItem.sourceDuration()
+
+    # Set track with in, out and speed
+    log.info("Track item will be placed at time: {}".format(timeline_in))
     trackItem.setTimelineIn(timeline_in)
-    trackItem.setTimelineOut(timeline_in + trackItem.sourceDuration() + 1)
+    trackItem.setTimelineOut(timeline_in + track_duration - 1)
     trackItem.setPlaybackSpeed(1)
     track.addItem(trackItem)
-    log.info("Added track item and uptated timeline_in to {}".format(timeline_in))
 
     # Return the duration of clip
-    return trackItem.sourceDuration()
+    return track_duration
 
 
 def get_plate_representations(plate_type, shot, task=None, preview_file=None):
@@ -295,3 +206,10 @@ def get_plate_representations(plate_type, shot, task=None, preview_file=None):
         raise RuntimeError("No valid plate type")
 
     return representations
+
+def map_representation_path(path_to_representation, project_name):
+    anatomy = Anatomy(project_name)
+    data = {"root": anatomy.roots}
+    path_mapped = StringTemplate.format_strict_template(path_to_representation, data)
+    path_mapped = path_mapped.replace("\\", "/")
+    return path_mapped
